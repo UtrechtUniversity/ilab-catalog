@@ -1,0 +1,7 @@
+---
+# copyright Utrecht University
+
+- name: Restart Solr
+  systemd:
+    name: solr
+    daemon_reload: yes

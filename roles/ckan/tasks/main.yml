@@ -1,0 +1,299 @@
+---
+# copyright Utrecht University
+
+- name: Ensure CKAN prerequisites are installed
+  package:
+    name: '{{ item }}'
+    state: present
+  with_items:
+    - xml-commons
+    - postgresql-server
+    - postgresql-devel
+    - postgresql
+    - python-devel
+    - libxslt
+    - libxslt-devel
+    - libxml2
+    - libxml2-devel
+    - python-virtualenv
+    - gcc
+    - gcc-c++
+    - make
+    - xalan-j2
+    - unzip
+    - policycoreutils-python
+    - mod_wsgi
+    - httpd
+
+
+- name: Ensure a 'wheel' group exists
+  group:
+    name: wheel
+    state: present
+
+
+- name: Allow 'wheel' group to have passwordless sudo
+  lineinfile:
+    dest: /etc/sudoers
+    state: present
+    regexp: '^%wheel'
+    line: '%wheel ALL=(ALL) NOPASSWD: ALL'
+    validate: visudo -cf %s
+
+
+- name: Ensure CKAN user exists
+  user:
+    name: ckan
+    comment: "CKAN User"
+    home: /usr/lib/ckan
+    shell: /bin/bash
+    groups: wheel
+    append: yes
+
+
+- name: Ensure CKAN database exists
+  become_user: postgres
+  become: yes
+  postgresql_db:
+    name: "ckan_default"
+    encoding: UTF-8
+    lc_collate: en_US.utf8
+    lc_ctype: en_US.utf8
+    template: template0
+
+
+- name: Ensure CKAN database user exists
+  become_user: postgres
+  become: yes
+  postgresql_user:
+    db: "ckan_default"
+    name: "ckan_default"
+    password: "{{ ckan_database_password }}"
+    priv: ALL
+
+
+- name: Allow Apache to connect to Postgresql
+  seboolean:
+    name: httpd_can_network_connect_db
+    state: yes
+    persistent: yes
+
+
+- name: Allow Apache to connect to Redis and SOLR
+  seboolean:
+    name: httpd_can_network_connect
+    state: yes
+    persistent: yes
+
+
+- name: Allow Apache to listen on port 8983 for Solr
+  seport:
+    ports: 8888
+    proto: tcp
+    setype: http_port_t
+    state: present
+
+
+- name: Ensure CKAN directories exist
+  file:
+    path: "{{ item }}"
+    state: directory
+    mode: 0755
+    owner: ckan
+  with_items:
+    - /usr/lib/ckan
+    - /usr/lib/ckan/default
+    - /etc/ckan
+    - /etc/ckan/default
+
+
+- name: Run CKAN installation script
+  become_user: ckan
+  shell: |
+    virtualenv --no-site-packages default
+    . default/bin/activate
+    pip install --upgrade pip
+    pip install -U setuptools
+    pip install --ignore-installed -e git+https://github.com/okfn/ckan.git@ckan-2.7.3#egg=ckan
+    pip install --ignore-installed -r default/src/ckan/pip-requirements-docs.txt
+    exit
+    creates=/usr/lib/ckan/default/src/ckan/ckan/config/solr/schema.xml
+  register: ckan_installed
+
+
+- name: Generate session secret
+  shell: openssl rand -base64 32 > /etc/ckan/default/session_secret
+    creates=/etc/ckan/default/session_secret
+  when: not ansible_check_mode
+
+
+- name: Read session secret
+  command: cat /etc/ckan/default/session_secret
+  register: session_secret
+  changed_when: false
+
+
+- name: Generate unique application instance identifier
+  shell: 'echo {{ hostname | to_uuid }} > /etc/ckan/default/app_instance_uuid
+    creates=/etc/ckan/default/app_instance_uuid'
+  when: not ansible_check_mode
+
+
+- name: Read unique application instance identifier
+  command: cat /etc/ckan/default/app_instance_uuid
+  register: app_instance_uuid
+  changed_when: false
+
+
+- name: Ensure CKAN config is present
+  template:
+    src: "configuration.ini.j2"
+    dest: "/etc/ckan/default/{{ ilab_catalog_environment }}.ini"
+  notify: Restart Apache webserver
+
+
+- name: Ensure CKAN schema is symlinked in Solr
+  become_user: root
+  become: yes
+  file:
+    src: /usr/lib/ckan/default/src/ckan/ckan/config/solr/schema.xml
+    dest: /var/solr/data/ckan/conf/schema.xml
+    state: link
+  register: link_schema
+  notify: Restart Solr
+
+
+- name: Ensure CKAN who.ini is symlinked
+  become_user: root
+  become: yes
+  file:
+    src: /usr/lib/ckan/default/src/ckan/who.ini
+    dest: /etc/ckan/default/who.ini
+    state: link
+
+
+- name: Install CKAN harvest extension
+  become_user: root
+  become: yes
+  shell: |
+    su -s /bin/bash - ckan
+    cd /usr/lib/ckan
+    . default/bin/activate
+    pip install -e git+https://github.com/ckan/ckanext-harvest.git@{{ ckanext_harvest_version }}#egg=ckanext-harvest
+    cd /usr/lib/ckan/default/src/ckanext-harvest/
+    pip install -r pip-requirements.txt
+    exit
+    creates=/usr/lib/ckan/default/src/ckanext-harvest/
+  notify: Restart Apache webserver
+
+
+- name: Ensure latest version of CKAN harvest extension is installed
+  become_user: root
+  become: yes
+  git:
+    repo: "https://github.com/ckan/ckanext-harvest.git"
+    dest: "/usr/lib/ckan/default/src/ckanext-harvest/"
+    version: "{{ ckanext_harvest_version }}"
+    update: "yes"
+  notify: Restart Apache webserver
+
+
+- name: Install CKAN OAI-PMH extension
+  become_user: root
+  become: yes
+  shell: |
+    su -s /bin/bash - ckan
+    cd /usr/lib/ckan
+    . default/bin/activate
+    pip install -e git+https://github.com/UtrechtUniversity/ckanext-oaipmh.git@{{ ckanext_oaipmh_version }}#egg=ckanext-oaipmh
+    cd /usr/lib/ckan/default/src/ckanext-oaipmh/
+    pip install -r requirements.txt
+    python setup.py develop
+    exit
+    creates=/usr/lib/ckan/default/src/ckanext-oaipmh/
+  notify: Restart Apache webserver
+
+
+- name: Ensure latest version of CKAN OAI-PMH extension is installed
+  become_user: root
+  become: yes
+  git:
+    repo: "https://github.com/UtrechtUniversity/ckanext-oaipmh.git"
+    dest: "/usr/lib/ckan/default/src/ckanext-oaipmh"
+    version: "{{ ckanext_oaipmh_version }}"
+    update: "yes"
+  notify: Restart Apache webserver
+
+
+- name: Initialize CKAN database
+  become_user: ckan
+  become: yes
+  shell: |
+    . /usr/lib/ckan/default/bin/activate
+    cd /usr/lib/ckan/default/src/ckan
+    paster db init -c /etc/ckan/default/{{ ilab_catalog_environment }}.ini
+    paster --plugin=ckanext-harvest harvester initdb --config=/etc/ckan/default/{{ ilab_catalog_environment }}.ini
+    exit
+  when: ckan_installed.changed
+
+
+- name: Check if CKAN admin user exists
+  become_user: ckan
+  become: yes
+  shell: |
+    . /usr/lib/ckan/default/bin/activate
+    cd /usr/lib/ckan/default/src/ckan
+    paster --plugin=ckan user list -c /etc/ckan/default/{{ ilab_catalog_environment }}.ini
+    exit
+  changed_when: False
+  register: ckan_admin_user
+
+
+- name: Add CKAN admin user
+  become_user: ckan
+  become: yes
+  shell: |
+    . /usr/lib/ckan/default/bin/activate
+    cd /usr/lib/ckan/default/src/ckan
+    paster user add ckanadmin password="{{ ckan_admin_password }}" email=ckanadmin@localhost name=ckanadmin -c /etc/ckan/default/{{ ilab_catalog_environment }}.ini
+    paster sysadmin add ckanadmin -c /etc/ckan/default/{{ ilab_catalog_environment }}.ini
+    exit
+  when: '"name=ckanadmin" not in ckan_admin_user.stdout'
+
+
+- name: Check if CKAN harvest user exists
+  become_user: ckan
+  become: yes
+  shell: |
+    . /usr/lib/ckan/default/bin/activate
+    cd /usr/lib/ckan/default/src/ckan
+    paster --plugin=ckan user list -c /etc/ckan/default/{{ ilab_catalog_environment }}.ini
+    exit
+  changed_when: False
+  register: ckan_harvest_user
+
+
+- name: Add CKAN harvest user
+  become_user: root
+  become: yes
+  shell: |
+    . /usr/lib/ckan/default/bin/activate
+    cd /usr/lib/ckan/default/src/ckan
+    paster user add harvest password="{{ ckan_harvest_password }}" email=harvest@localhost name=harvest -c /etc/ckan/default/{{ ilab_catalog_environment }}.ini
+    paster sysadmin add harvest -c /etc/ckan/default/{{ ilab_catalog_environment }}.ini
+    exit
+  when: '"name=harvest" not in ckan_admin_user.stdout'
+
+
+- name: Ensure WSGI specification for CKAN is present
+  template:
+    src: "apache.wsgi.j2"
+    dest: "/etc/ckan/default/apache.wsgi"
+  notify: Restart Apache webserver
+
+
+- name: Ensure I-lab Catalog virtual host config for Apache is present
+  template:
+    src: "ilab-catalog-vhost.conf.j2"
+    dest: "/etc/httpd/conf.d/ilab-catalog-vhost.conf"
+  notify: Restart Apache webserver

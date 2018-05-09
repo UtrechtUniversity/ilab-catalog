@@ -1,0 +1,25 @@
+---
+# copyright Utrecht University
+# This playbook deploys a complete I-lab Catalog CKAN instance.
+
+- hosts: all
+  pre_tasks:
+    - name: Verify Ansible version meets requirements
+      assert:
+        that: "ansible_version.full is version_compare('2.4', '>=')"
+        msg: >
+          "You must update Ansible to at least 2.4 to deploy EPOS CKAN."
+
+
+- name: Provision I-lab Catalog CKAN server
+  hosts: all
+  become: yes
+  roles:
+    - common
+    - certificates
+    - apache
+    - postgresql
+    - solr
+    - redis
+    - ckan
+    - ckan-harvester

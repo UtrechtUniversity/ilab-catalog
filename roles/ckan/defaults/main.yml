@@ -1,0 +1,16 @@
+---
+# copyright Utrecht University
+
+# I-lab Catalog configuration
+ilab_catalog_version: development          # I-lab Catalog version to install
+ilab_catalog_fqdn: ilab-catalog.ckan.test  # I-lab Catalog fully qualified domain name (FQDN)
+
+# OpenSSL configuration.
+openssl_private_dir: '/etc/pki/tls/private'
+openssl_certs_dir: '/etc/pki/tls/certs'
+openssl_key_signed: localhost.key
+openssl_crt_signed: localhost.crt
+
+# CKAN extension verions
+ckanext_harvest_version: 65e3163015079f425805a6b35458b1b1bf6d0ce0
+ckanext_oaipmh_version: '{{ ilab_catalog_version }}'
