@@ -225,6 +225,29 @@
   notify: Restart Apache webserver
 
 
+- name: Install I-Lab Catalog custom CKAN theme
+  become_user: root
+  become: yes
+  shell: |
+    su -s /bin/bash - ckan
+    cd /usr/lib/ckan
+    . default/bin/activate
+    pip install -e git+https://github.com/UtrechtUniversity/ilab-catalog-theme.git@{{ ckanext_custom_theme_version }}#egg=ckanext-custom_theme
+    exit
+    creates=/usr/lib/ckan/default/src/ckanext-custom-theme/
+  notify: Restart Apache webserver
+
+
+- name: Ensure latest version of I-Lab Catalog custom CKAN theme is installed
+  become_user: root
+  become: yes
+  git:
+    repo: "https://github.com/UtrechtUniversity/ilab-catalog-theme.git"
+    dest: "/usr/lib/ckan/default/src/ckanext-custom-theme/"
+    version: "{{ ckanext_custom_theme_version }}"
+    update: "yes"
+
+
 - name: Initialize CKAN database
   become_user: ckan
   become: yes
