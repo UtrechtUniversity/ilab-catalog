@@ -320,3 +320,23 @@
     src: "ilab-catalog-vhost.conf.j2"
     dest: "/etc/httpd/conf.d/ilab-catalog-vhost.conf"
   notify: Restart Apache webserver
+
+
+- name: Ensure I-lab Catalog CKAN custom translation is present
+  become_user: ckan
+  copy:
+    src: '{{ item.src }}'
+    dest: '{{ item.dest }}'
+    mode: 0644
+  with_items:
+    - src: 'ckan.po'
+      dest: '/usr/lib/ckan/default/src/ckan/ckan/i18n/en_GB/LC_MESSAGES/ckan.po'
+    - src: 'ckan.mo'
+      dest: '/usr/lib/ckan/default/src/ckan/ckan/i18n/en_GB/LC_MESSAGES/ckan.mo'
+  register: custom_translation
+  notify: Restart Apache webserver
+
+
+- name: Workaround translation problem
+  command: cp /usr/lib/ckan/default/src/ckan/ckan/public/base/i18n/en_AU.js /usr/lib/ckan/default/src/ckan/ckan/public/base/i18n/en_GB.js
+  when: custom_translation is changed
