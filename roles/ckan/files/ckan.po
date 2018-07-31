@@ -3262,7 +3262,7 @@ msgstr "organisations"
 
 #: ckan/templates/home/snippets/stats.html:23
 msgid "groups"
-msgstr "groups"
+msgstr "collections"
 
 #: ckan/templates/macros/autoform.html:62
 msgid "Site logo"
