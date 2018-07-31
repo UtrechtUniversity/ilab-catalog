@@ -13,5 +13,5 @@ openssl_crt_signed: localhost.crt
 
 # CKAN extension verions
 ckanext_harvest_version: 65e3163015079f425805a6b35458b1b1bf6d0ce0
-ckanext_oaipmh_version: e5009297c1bea2c19a1c700fe7c05b1108272c51
+ckanext_oaipmh_version: development
 ckanext_custom_theme_version: '{{ ilab_catalog_version }}'
