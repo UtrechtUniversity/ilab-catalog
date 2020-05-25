@@ -11,6 +11,10 @@
 <VirtualHost *:443>
     ServerName {{ ilab_catalog_fqdn }}
     ServerAlias {{ ilab_catalog_fqdn }}
+
+    RequestHeader set Host '{{ ilab_catalog_fqdn }}'
+    RequestHeader unset X-Forwarded-Host
+
     WSGIScriptAlias / /etc/ckan/default/apache.wsgi
 
     # Pass authorization info on (needed for rest api).
