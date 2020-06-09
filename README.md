@@ -1,5 +1,5 @@
 # ilab-catalog
-[Ansible](https://docs.ansible.com) scripts for automatic deployment of I-lab Catalog.
+[Ansible](https://docs.ansible.com) scripts for automatic deployment of Yoda Catalog.
 
 ## Requirements
 ### Control machine requirements
@@ -10,7 +10,7 @@
 ### Managed node requirements
 * [CentOS](https://www.centos.org/) (>= 7.3)
 
-## Deploying I-lab Catalog development instance
+## Deploying Yoda Catalog development instance
 
 Configure the virtual machine for development:
 ```bash
@@ -23,7 +23,7 @@ vagrant ssh ilab-catalog-controller
 cd ~/ilab-catalog
 ```
 
-Deploy I-lab Catalog to development virtual machine:
+Deploy Yoda Catalog to development virtual machine:
 ```bash
 ansible-playbook playbook.yml
 ```
@@ -33,8 +33,8 @@ Add following host to /etc/hosts (GNU/Linux or macOS) or %SystemRoot%\System32\d
 192.168.70.10 ilab-catalog.ckan.test
 ```
 
-## Upgrading I-lab Catalog instance
-Upgrading the I-lab Catalog development instance to the latest version can be done by running the Ansible playbooks again.
+## Upgrading Yoda Catalog instance
+Upgrading the Yoda Catalog development instance to the latest version can be done by running the Ansible playbooks again.
 
 On a Windows host first SSH into the Ansible controller virtual machine (skip this step on GNU/Linux or macOS):
 ```bash
@@ -47,18 +47,18 @@ Upgrade Ansible scripts:
 git pull
 ```
 
-Upgrade I-lab Catalog instance:
+Upgrade Yoda Catalog instance:
 ```bash
 ansible-playbook playbook.yml
 ```
 
 #  CKAN catalog
-I-lab uses CKAN as basis for catalog functionality.  
-CKAN is generic software that can be tailored to become an entirely blabla application.
-It uses several modules / extensions to be able to form CKAN standard product into an application that can handle YoDa specific data.
+Yoda Catalog uses CKAN as basis for catalog functionality.  
+CKAN is generic software that can be tailored.
+It uses several modules / extensions to be able to form CKAN standard product into an application that can handle Yoda specific data.
 
 ## Harvest sources   
-A harvest source is a configuration, added within CKAN, to instruct where to harvest for data and how to deal with the harvested data from the source (in this case YODA).  
+A harvest source is a configuration, added within CKAN, to instruct where to harvest for data and how to deal with the harvested data from the source (in this case Yoda).  
 This by passing information to the ckan module CKANEXT-OAIPMH (see further)
 
 Harvest sources, which is functionality added to CKAN by 3rd party module ‘ckan-harvester’, is mainly a configuration holding:  
@@ -84,7 +84,7 @@ This goes especially for the extra – fields.
 
 The processing of the fetched data is dealt with within another extension. CKANEXT-OAIPMH.  
 Thus, any party can tailor CKAN to its own wishes.  
-This extension is under development by the YoDa-team: CKANEXT-OAIPMH
+This extension is under development by the Yoda-team: CKANEXT-OAIPMH
 
 
 ## CKAN Extension CKANEXT-OAIPMH

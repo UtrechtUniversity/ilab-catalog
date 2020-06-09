@@ -228,7 +228,7 @@
   notify: Restart Apache webserver
 
 
-- name: Install I-Lab Catalog custom CKAN theme
+- name: Install Yoda Catalog custom CKAN theme
   become_user: root
   become: yes
   shell: |
@@ -241,7 +241,7 @@
   notify: Restart Apache webserver
 
 
-- name: Ensure latest version of I-Lab Catalog custom CKAN theme is installed
+- name: Ensure latest version of Yoda Catalog custom CKAN theme is installed
   become_user: root
   become: yes
   git:
@@ -297,7 +297,7 @@
     exit
   changed_when: False
   register: ckan_harvest_user
-  
+
 
 - name: Add CKAN harvest user
   become_user: root
@@ -318,14 +318,14 @@
   notify: Restart Apache webserver
 
 
-- name: Ensure I-lab Catalog virtual host config for Apache is present
+- name: Ensure Yoda Catalog virtual host config for Apache is present
   template:
     src: "ilab-catalog-vhost.conf.j2"
     dest: "/etc/httpd/conf.d/ilab-catalog-vhost.conf"
   notify: Restart Apache webserver
 
 
-- name: Ensure I-lab Catalog CKAN custom translation is present
+- name: Ensure Yoda Catalog CKAN custom translation is present
   become_user: ckan
   copy:
     src: '{{ item.src }}'
