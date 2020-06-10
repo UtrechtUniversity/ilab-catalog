@@ -7,9 +7,9 @@
   pre_tasks:
     - name: Verify Ansible version meets requirements
       assert:
-        that: "ansible_version.full is version('2.7', '>=')"
+        that: "ansible_version.full is version('2.8', '>=')"
         msg: >
-          "You must update Ansible to at least 2.7 to deploy Yoda Catalog CKAN."
+          "You must update Ansible to at least 2.8 to deploy Yoda Catalog CKAN."
 
 
 - name: Provision Yoda Catalog CKAN server

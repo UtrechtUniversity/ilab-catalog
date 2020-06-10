@@ -114,7 +114,7 @@
     . default/bin/activate
     pip install --upgrade pip
     pip install -U setuptools
-    pip install --ignore-installed -e git+https://github.com/okfn/ckan.git@ckan-2.7.3#egg=ckan
+    pip install --ignore-installed -e git+https://github.com/okfn/ckan.git@ckan-2.8.4#egg=ckan
     pip install --ignore-installed -r default/src/ckan/pip-requirements-docs.txt
     exit
   args:
@@ -132,6 +132,7 @@
 - name: Read session secret
   command: cat /etc/ckan/default/session_secret
   register: session_secret
+  check_mode: no
   changed_when: false
 
 
@@ -144,6 +145,7 @@
 - name: Read unique application instance identifier
   command: cat /etc/ckan/default/app_instance_uuid
   register: app_instance_uuid
+  check_mode: no
   changed_when: false
 
 
@@ -152,7 +154,32 @@
     src: "configuration.ini.j2"
     dest: "/etc/ckan/default/{{ ilab_catalog_environment }}.ini"
   notify: Restart Apache webserver
-  when: not ansible_check_mode
+
+
+- name: Check installed CKAN version
+  become_user: ckan
+  become: yes
+  shell:  |
+    cd /usr/lib/ckan
+    . default/bin/activate
+    pip show ckan | grep 2.8.4
+    exit
+  check_mode: no
+  ignore_errors: yes
+  register: ckan_upgrade
+
+
+- name: Upgrade CKAN to 2.8.4
+  become_user: ckan
+  become: yes
+  shell: |
+    cd /usr/lib/ckan
+    . default/bin/activate
+    pip install --ignore-installed -e git+https://github.com/okfn/ckan.git@ckan-2.8.4#egg=ckan
+    pip install flask_babel
+    exit
+  register: ckan_upgraded
+  notify: Restart Apache webserver
 
 
 - name: Ensure CKAN schema is symlinked in Solr
