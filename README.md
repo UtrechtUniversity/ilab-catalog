@@ -3,12 +3,12 @@
 
 ## Requirements
 ### Control machine requirements
-* [Ansible](https://docs.ansible.com/ansible/intro_installation.html) (>= 2.8)
-* [VirtualBox](https://www.virtualbox.org/manual/ch02.html) (>= 5.1)
+* [Ansible](https://docs.ansible.com/ansible/intro_installation.html) (>= 2.9)
+* [VirtualBox](https://www.virtualbox.org/manual/ch02.html) (>= 6.0)
 * [Vagrant](https://www.vagrantup.com/docs/installation/) (>= 1.9)
 
 ### Managed node requirements
-* [CentOS](https://www.centos.org/) (>= 7.3)
+* [CentOS](https://www.centos.org/) (>= 8)
 
 ## Deploying Yoda Catalog development instance
 
@@ -19,7 +19,7 @@ vagrant up
 
 On a Windows host first SSH into the Ansible controller virtual machine (skip this step on GNU/Linux or macOS):
 ```bash
-vagrant ssh ilab-catalog-controller
+vagrant ssh uu-catalog-controller
 cd ~/ilab-catalog
 ```
 
@@ -30,7 +30,7 @@ ansible-playbook playbook.yml
 
 Add following host to /etc/hosts (GNU/Linux or macOS) or %SystemRoot%\System32\drivers\etc\hosts (Windows):
 ```
-192.168.70.10 ilab-catalog.ckan.test
+192.168.70.10 uu-catalog.test
 ```
 
 ## Upgrading Yoda Catalog instance

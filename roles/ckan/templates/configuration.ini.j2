@@ -1,5 +1,5 @@
 # {{ ansible_managed }}
-# {{ ilab_catalog_environment }}.ini
+# {{ uu_catalog_environment }}.ini
 #
 # CKAN - Pylons configuration
 #
@@ -58,7 +58,7 @@ ckan.datastore.default_fts_index_method = gist
 
 ## Site Settings
 
-ckan.site_url = https://{{ ilab_catalog_fqdn }}/
+ckan.site_url = https://{{ uu_catalog_fqdn }}/
 #ckan.use_pylons_response_cleanup_middleware = true
 
 ## Authorization Settings
@@ -118,9 +118,9 @@ ckan.views.default_views = image_view text_view recline_view
 
 ## Front-End Settings
 ckan.site_title = Yoda Catalog
-ckan.site_logo = https://{{ ilab_catalog_fqdn }}/images/logo.png
+ckan.site_logo = https://{{ uu_catalog_fqdn }}/images/logo.png
 ckan.site_description = Yoda Catalog
-ckan.favicon = https://{{ ilab_catalog_fqdn }}/favicon.ico
+ckan.favicon = https://{{ uu_catalog_fqdn }}/favicon.ico
 ckan.gravatar_default = identicon
 ckan.preview.direct = png jpg gif
 ckan.preview.loadable = html htm rdf+xml owl+xml xml n3 n-triples turtle plain atom csv tsv rss txt json

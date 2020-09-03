@@ -3,7 +3,7 @@
 
 - name: Ensure dependencies for Ansible OpenSSL module are installed
   package:
-    name: pyOpenSSL
+    name: python3-cryptography
     state: present
 
 

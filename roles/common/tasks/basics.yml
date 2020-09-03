@@ -3,12 +3,8 @@
 
 - name: Ensure Ansible dependencies are installed
   package:
-    name: '{{ item }}'
+    name: policycoreutils-python-utils
     state: present
-  with_items:
-  - libsemanage-python
-  - libselinux-python
-  - policycoreutils-python
 
 
 - name: Ensure basics (vim, bind-utils, etc.) are installed
@@ -19,5 +15,6 @@
     - bind-utils
     - vim
     - htop
+    - nmon
     - git
     - tmux

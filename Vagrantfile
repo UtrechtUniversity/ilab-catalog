@@ -6,16 +6,16 @@
 # Configuration variables.
 VAGRANTFILE_API_VERSION = "2"
 
-BOX = 'centos/7'
+BOX = 'generic/centos8'
 GUI = false
 CPU = 2
 RAM = 2048
 
-DOMAIN  = ".ckan.test"
+DOMAIN  = ".test"
 NETWORK = "192.168.70."
 NETMASK = "255.255.255.0"
 HOSTS = {
-  "ilab-catalog" => [NETWORK+"10", 2, 2048, GUI, BOX],
+  "uu-catalog" => [NETWORK+"10", 2, 2048, GUI, BOX],
 }
 
 
@@ -46,7 +46,7 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
 
   # Provision controller for Ansible on Windows host.
   if Vagrant::Util::Platform.windows? then
-    config.vm.define "ilab-catalog-controller" do |controller|
+    config.vm.define "uu-catalog-controller" do |controller|
       controller.vm.provider "virtualbox" do |vbox|
         vbox.customize ["guestproperty", "set", :id, "/VirtualBox/GuestAdd/VBoxService/--timesync-set-threshold", 10000]
       end

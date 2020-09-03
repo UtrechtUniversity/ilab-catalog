@@ -6,24 +6,13 @@
     name: '{{ item }}'
     state: present
   with_items:
-    - xml-commons
-    - postgresql-server
+    - python3-devel
+    - python3-pip
+    - python3-virtualenv
+    - python3-mod_wsgi
     - postgresql-devel
-    - postgresql
-    - python-devel
-    - libxslt
-    - libxslt-devel
-    - libxml2
-    - libxml2-devel
-    - python-virtualenv
-    - gcc
-    - gcc-c++
-    - make
-    - xalan-j2
+    - httpd-devel    
     - unzip
-    - policycoreutils-python
-    - mod_wsgi
-    - httpd
 
 
 - name: Ensure a 'wheel' group exists
@@ -110,15 +99,14 @@
 - name: Run CKAN installation script
   become_user: ckan
   shell: |
-    virtualenv --no-site-packages default
-    . default/bin/activate
-    pip install --upgrade pip
-    pip install -U setuptools
-    pip install --ignore-installed -e git+https://github.com/okfn/ckan.git@ckan-2.8.4#egg=ckan
-    pip install --ignore-installed -r default/src/ckan/pip-requirements-docs.txt
-    exit
+    python3 -m venv /usr/lib/ckan/default
+    . /usr/lib/ckan/default/bin/activate
+    python3 -m pip install setuptools==44.1.0
+    python3 -m pip install --upgrade pip
+    python3 -m pip install -e 'git+https://github.com/ckan/ckan.git@ckan-2.9.0#egg=ckan[requirements]'
+    python3 -m pip install --ignore-installed -r /usr/lib/ckan/default/src/ckan/pip-requirements-docs.txt
+    deactivate
   args:
-    chdir: /usr/lib/ckan
     creates: /usr/lib/ckan/default/src/ckan/ckan/config/solr/schema.xml
   register: ckan_installed
 
@@ -152,33 +140,7 @@
 - name: Ensure CKAN config is present
   template:
     src: "configuration.ini.j2"
-    dest: "/etc/ckan/default/{{ ilab_catalog_environment }}.ini"
-  notify: Restart Apache webserver
-
-
-- name: Check installed CKAN version
-  become_user: ckan
-  become: yes
-  shell:  |
-    cd /usr/lib/ckan
-    . default/bin/activate
-    pip show ckan | grep 2.8.4
-    exit
-  check_mode: no
-  ignore_errors: yes
-  register: ckan_upgrade
-
-
-- name: Upgrade CKAN to 2.8.4
-  become_user: ckan
-  become: yes
-  shell: |
-    cd /usr/lib/ckan
-    . default/bin/activate
-    pip install --ignore-installed -e git+https://github.com/okfn/ckan.git@ckan-2.8.4#egg=ckan
-    pip install flask_babel
-    exit
-  register: ckan_upgraded
+    dest: "/etc/ckan/default/{{ uu_catalog_environment }}.ini"
   notify: Restart Apache webserver
 
 
@@ -209,10 +171,10 @@
     su -s /bin/bash - ckan
     cd /usr/lib/ckan
     . default/bin/activate
-    pip install -e git+https://github.com/ckan/ckanext-harvest.git@{{ ckanext_harvest_version }}#egg=ckanext-harvest
+    python3 -m pip install -e git+https://github.com/ckan/ckanext-harvest.git@{{ ckanext_harvest_version }}#egg=ckanext-harvest
     cd /usr/lib/ckan/default/src/ckanext-harvest/
-    pip install -r pip-requirements.txt
-    exit
+    python3 -m pip install -r pip-requirements.txt
+    deactivate
     creates=/usr/lib/ckan/default/src/ckanext-harvest/
   notify: Restart Apache webserver
 
@@ -235,11 +197,11 @@
     su -s /bin/bash - ckan
     cd /usr/lib/ckan
     . default/bin/activate
-    pip install -e git+https://github.com/UtrechtUniversity/ckanext-oaipmh.git@{{ ckanext_oaipmh_version }}#egg=ckanext-oaipmh
+    python3 -m pip install -e git+https://github.com/UtrechtUniversity/ckanext-oaipmh.git@{{ ckanext_oaipmh_version }}#egg=ckanext-oaipmh
     cd /usr/lib/ckan/default/src/ckanext-oaipmh/
-    pip install -r requirements.txt
+    python3 -m pip install -r requirements.txt
     python setup.py develop
-    exit
+    deactivate
     creates=/usr/lib/ckan/default/src/ckanext-oaipmh/
   notify: Restart Apache webserver
 
@@ -262,8 +224,8 @@
     su -s /bin/bash - ckan
     cd /usr/lib/ckan
     . default/bin/activate
-    pip install -e git+https://github.com/UtrechtUniversity/ilab-catalog-theme.git@{{ ckanext_custom_theme_version }}#egg=ckanext-custom_theme
-    exit
+    python3 -m pip install -e git+https://github.com/UtrechtUniversity/ilab-catalog-theme.git@{{ ckanext_custom_theme_version }}#egg=ckanext-custom_theme
+    deactivate
     creates=/usr/lib/ckan/default/src/ckanext-custom-theme/
   notify: Restart Apache webserver
 
@@ -284,9 +246,9 @@
   shell: |
     . /usr/lib/ckan/default/bin/activate
     cd /usr/lib/ckan/default/src/ckan
-    paster db init -c /etc/ckan/default/{{ ilab_catalog_environment }}.ini
-    paster --plugin=ckanext-harvest harvester initdb --config=/etc/ckan/default/{{ ilab_catalog_environment }}.ini
-    exit
+    paster db init -c /etc/ckan/default/{{ uu_catalog_environment }}.ini
+    paster --plugin=ckanext-harvest harvester initdb --config=/etc/ckan/default/{{ uu_catalog_environment }}.ini
+    deactivate
   when: ckan_installed.changed
 
 
@@ -296,8 +258,8 @@
   shell: |
     . /usr/lib/ckan/default/bin/activate
     cd /usr/lib/ckan/default/src/ckan
-    paster --plugin=ckan user list -c /etc/ckan/default/{{ ilab_catalog_environment }}.ini
-    exit
+    paster --plugin=ckan user list -c /etc/ckan/default/{{ uu_catalog_environment }}.ini
+    deactivate
   changed_when: False
   register: ckan_admin_user
 
@@ -308,9 +270,9 @@
   shell: |
     . /usr/lib/ckan/default/bin/activate
     cd /usr/lib/ckan/default/src/ckan
-    paster user add ckanadmin password="{{ ckan_admin_password }}" email=ckanadmin@localhost name=ckanadmin -c /etc/ckan/default/{{ ilab_catalog_environment }}.ini
-    paster sysadmin add ckanadmin -c /etc/ckan/default/{{ ilab_catalog_environment }}.ini
-    exit
+    paster user add ckanadmin password="{{ ckan_admin_password }}" email=ckanadmin@localhost name=ckanadmin -c /etc/ckan/default/{{ uu_catalog_environment }}.ini
+    paster sysadmin add ckanadmin -c /etc/ckan/default/{{ uu_catalog_environment }}.ini
+    deactivate
   when: ('"name=ckanadmin" not in ckan_admin_user.stdout') and not ansible_check_mode
 
 
@@ -320,8 +282,8 @@
   shell: |
     . /usr/lib/ckan/default/bin/activate
     cd /usr/lib/ckan/default/src/ckan
-    paster --plugin=ckan user list -c /etc/ckan/default/{{ ilab_catalog_environment }}.ini
-    exit
+    paster --plugin=ckan user list -c /etc/ckan/default/{{ uu_catalog_environment }}.ini
+    deactivate
   changed_when: False
   register: ckan_harvest_user
 
@@ -332,9 +294,9 @@
   shell: |
     . /usr/lib/ckan/default/bin/activate
     cd /usr/lib/ckan/default/src/ckan
-    paster user add harvest password="{{ ckan_harvest_password }}" email=harvest@localhost name=harvest -c /etc/ckan/default/{{ ilab_catalog_environment }}.ini
-    paster sysadmin add harvest -c /etc/ckan/default/{{ ilab_catalog_environment }}.ini
-    exit
+    paster user add harvest password="{{ ckan_harvest_password }}" email=harvest@localhost name=harvest -c /etc/ckan/default/{{ uu_catalog_environment }}.ini
+    paster sysadmin add harvest -c /etc/ckan/default/{{ uu_catalog_environment }}.ini
+    deactivate
   when: ('"name=harvest" not in ckan_admin_user.stdout') and not ansible_check_mode
 
 
@@ -345,28 +307,8 @@
   notify: Restart Apache webserver
 
 
-- name: Ensure Yoda Catalog virtual host config for Apache is present
+- name: Ensure UU Catalog virtual host config for Apache is present
   template:
-    src: "ilab-catalog-vhost.conf.j2"
-    dest: "/etc/httpd/conf.d/ilab-catalog-vhost.conf"
+    src: "uu-catalog-vhost.conf.j2"
+    dest: "/etc/httpd/conf.d/uu-catalog-vhost.conf"
   notify: Restart Apache webserver
-
-
-- name: Ensure Yoda Catalog CKAN custom translation is present
-  become_user: ckan
-  copy:
-    src: '{{ item.src }}'
-    dest: '{{ item.dest }}'
-    mode: 0644
-  with_items:
-    - src: 'ckan.po'
-      dest: '/usr/lib/ckan/default/src/ckan/ckan/i18n/en_GB/LC_MESSAGES/ckan.po'
-    - src: 'ckan.mo'
-      dest: '/usr/lib/ckan/default/src/ckan/ckan/i18n/en_GB/LC_MESSAGES/ckan.mo'
-  register: custom_translation
-  notify: Restart Apache webserver
-
-
-- name: Workaround translation problem
-  command: cp /usr/lib/ckan/default/src/ckan/ckan/public/base/i18n/en_AU.js /usr/lib/ckan/default/src/ckan/ckan/public/base/i18n/en_GB.js
-  when: custom_translation is changed
