@@ -23,4 +23,4 @@
     - solr
     - redis
     - ckan
-    - ckan-harvester
+#    - ckan-harvester

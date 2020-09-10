@@ -67,6 +67,7 @@ Listen 80
 # LoadModule foo_module modules/mod_foo.so
 #
 Include conf.modules.d/*.conf
+LoadModule proxy_uwsgi_module modules/mod_proxy_uwsgi.so
 
 #
 # If you wish httpd to run as a different user or group, you must run

@@ -17,6 +17,6 @@ ckan_db_lc_collate: en_US.utf8
 ckan_db_lc_ctype: en_US.utf8
 
 # CKAN extension verions
-ckanext_harvest_version: 7dd82a0e01ba85b7f2f4cc02b66dd4948ed7093e
+ckanext_harvest_version: df34890a2f8fa5bc023221e3c10cf2627bbae9f6
 ckanext_oaipmh_version: '{{ uu_catalog_version }}'
 ckanext_custom_theme_version: '{{ uu_catalog_version }}'
