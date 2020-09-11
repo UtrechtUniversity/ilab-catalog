@@ -257,7 +257,7 @@
   shell: |
     . /usr/lib/ckan/default/bin/activate
     cd /usr/lib/ckan/default/src/ckan
-    paster --plugin=ckan user list -c /etc/ckan/default/{{ uu_catalog_environment }}.ini
+    ckan -c /etc/ckan/default/{{ uu_catalog_environment }}.ini user list
     deactivate
   changed_when: False
   register: ckan_admin_user
@@ -269,8 +269,8 @@
   shell: |
     . /usr/lib/ckan/default/bin/activate
     cd /usr/lib/ckan/default/src/ckan
-    paster user add ckanadmin password="{{ ckan_admin_password }}" email=ckanadmin@localhost name=ckanadmin -c /etc/ckan/default/{{ uu_catalog_environment }}.ini
-    paster sysadmin add ckanadmin -c /etc/ckan/default/{{ uu_catalog_environment }}.ini
+    ckan  -c /etc/ckan/default/{{ uu_catalog_environment }}.ini user add ckanadmin password="{{ ckan_admin_password }}" email=ckanadmin@localhost name=ckanadmin
+    ckan -c /etc/ckan/default/{{ uu_catalog_environment }}.ini sysadmin add ckanadmin
     deactivate
   when: ('"name=ckanadmin" not in ckan_admin_user.stdout') and not ansible_check_mode
 
@@ -281,7 +281,7 @@
   shell: |
     . /usr/lib/ckan/default/bin/activate
     cd /usr/lib/ckan/default/src/ckan
-    paster --plugin=ckan user list -c /etc/ckan/default/{{ uu_catalog_environment }}.ini
+    ckan -c /etc/ckan/default/{{ uu_catalog_environment }}.ini user list
     deactivate
   changed_when: False
   register: ckan_harvest_user
@@ -293,8 +293,8 @@
   shell: |
     . /usr/lib/ckan/default/bin/activate
     cd /usr/lib/ckan/default/src/ckan
-    paster user add harvest password="{{ ckan_harvest_password }}" email=harvest@localhost name=harvest -c /etc/ckan/default/{{ uu_catalog_environment }}.ini
-    paster sysadmin add harvest -c /etc/ckan/default/{{ uu_catalog_environment }}.ini
+    ckan -c /etc/ckan/default/{{ uu_catalog_environment }}.ini user add harvest password="{{ ckan_harvest_password }}" email=harvest@localhost name=harvest
+    ckan -c /etc/ckan/default/{{ uu_catalog_environment }}.ini sysadmin add harvest
     deactivate
   when: ('"name=harvest" not in ckan_admin_user.stdout') and not ansible_check_mode
 
