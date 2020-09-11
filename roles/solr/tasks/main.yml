@@ -69,8 +69,16 @@
     dest: "/var/solr/data/ckan/conf/solrconfig.xml"
 
 
-- name: Ensure Solr is started
-  shell: service solr start
+# Solr might not be running as a system service, so don't invoke systemd
+- name: Ensure Solr is stopped
+  shell: service solr stop
+  when: solr_installed.changed
+
+
+- name: Ensure Solr deamon is reloaded
+  systemd:
+    name: solr
+    daemon_reload: yes
   when: solr_installed.changed
 
 
