@@ -13,9 +13,21 @@
     RequestHeader set Host '{{ uu_catalog_fqdn }}'
     RequestHeader unset X-Forwarded-Host
 
-    <Location />
-        ProxyPass uswgi://127.0.0.1:8080
-    </Location>
+    WSGIScriptAlias / /etc/ckan/default/apache.wsgi
+
+    # Pass authorization info on (needed for rest api).
+    WSGIPassAuthorization On
+
+    # Deploy as a daemon (avoids conflicts between CKAN instances).
+    WSGIDaemonProcess ckan_default display-name=ckan_default processes=2 threads=10 python-home=/usr/lib/ckan/default
+
+    WSGIProcessGroup ckan_default
+
+    <IfModule mod_rpaf.c>
+        RPAFenable On
+        RPAFsethostname On
+        RPAFproxy_ips 127.0.0.1
+    </IfModule>
 
     <Directory />
         Require all granted

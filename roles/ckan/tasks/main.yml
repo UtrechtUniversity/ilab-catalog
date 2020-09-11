@@ -246,8 +246,7 @@
   shell: |
     . /usr/lib/ckan/default/bin/activate
     cd /usr/lib/ckan/default/src/ckan
-    paster db init -c /etc/ckan/default/{{ uu_catalog_environment }}.ini
-    paster --plugin=ckanext-harvest harvester initdb --config=/etc/ckan/default/{{ uu_catalog_environment }}.ini
+    ckan -c /etc/ckan/default/{{ uu_catalog_environment }}.ini db init
     deactivate
   when: ckan_installed.changed
 
@@ -302,45 +301,9 @@
 
 - name: Ensure WSGI script file for CKAN is present
   template:
-    src: "wsgi.py.j2"
-    dest: "/etc/ckan/default/wsgi.py"
+    src: "apache.wsgi.j2"
+    dest: "/etc/ckan/default/apache.wsgi"
   notify: Restart Apache webserver
-
-
-- name: Ensure the WSGI Server is installed
-  become_user: ckan
-  shell: |
-    python3 -m venv /usr/lib/ckan/default
-    . /usr/lib/ckan/default/bin/activate
-    python3 -m pip install uwsgi
-    deactivate
-  args:
-    creates: /etc/ckan/default/ckan-uwsgi.ini
-
-
-- name: Ensure uwsgi configuration for CKAN is present
-  template:
-    src: "ckan-uwsgi.ini.j2"
-    dest: "/etc/ckan/default/ckan-uwsgi.ini"
-
-
-- name: Ensure Supervisor is installed
-  package:
-    name: supervisor
-    state: present
-
-
-- name: Ensure Supervisor configuration for CKAN is present
-  template:
-    src: "ckan-uwsgi.conf.j2"
-    dest: "/etc/supervisord.d/ckan-uwsgi.conf"
-
-
-- name: Ensure Supervisor is started and enabled on boot
-  service:
-    name: supervisord
-    state: started
-    enabled: yes
 
 
 - name: Ensure UU Catalog virtual host config for Apache is present
