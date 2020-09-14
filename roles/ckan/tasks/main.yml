@@ -139,8 +139,8 @@
 
 - name: Ensure CKAN config is present
   template:
-    src: "configuration.ini.j2"
-    dest: "/etc/ckan/default/{{ uu_catalog_environment }}.ini"
+    src: "ckan.ini.j2"
+    dest: "/etc/ckan/default/ckan.ini"
   notify: Restart Apache webserver
 
 
