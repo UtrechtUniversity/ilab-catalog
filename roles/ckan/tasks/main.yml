@@ -190,31 +190,31 @@
   notify: Restart Apache webserver
 
 
-# - name: Install CKAN OAI-PMH extension
-#   become_user: root
-#   become: yes
-#   shell: |
-#     su -s /bin/bash - ckan
-#     cd /usr/lib/ckan
-#     . default/bin/activate
-#     python3 -m pip install -e git+https://github.com/UtrechtUniversity/ckanext-oaipmh.git@{{ ckanext_oaipmh_version }}#egg=ckanext-oaipmh
-#     cd /usr/lib/ckan/default/src/ckanext-oaipmh/
-#     python3 -m pip install -r requirements.txt
-#     python setup.py develop
-#     deactivate
-#     creates=/usr/lib/ckan/default/src/ckanext-oaipmh/
-#   notify: Restart Apache webserver
+- name: Install CKAN OAI-PMH extension
+  become_user: root
+  become: yes
+  shell: |
+    su -s /bin/bash - ckan
+    cd /usr/lib/ckan
+    . default/bin/activate
+    python3 -m pip install -e git+https://github.com/UtrechtUniversity/ckanext-oaipmh.git@{{ ckanext_oaipmh_version }}#egg=ckanext-oaipmh
+    cd /usr/lib/ckan/default/src/ckanext-oaipmh/
+    python3 -m pip install -r requirements.txt
+    python setup.py develop
+    deactivate
+    creates=/usr/lib/ckan/default/src/ckanext-oaipmh/
+  notify: Restart Apache webserver
 
 
-# - name: Ensure latest version of CKAN OAI-PMH extension is installed
-#   become_user: root
-#   become: yes
-#   git:
-#     repo: "https://github.com/UtrechtUniversity/ckanext-oaipmh.git"
-#     dest: "/usr/lib/ckan/default/src/ckanext-oaipmh"
-#     version: "{{ ckanext_oaipmh_version }}"
-#     update: "yes"
-#   notify: Restart Apache webserver
+- name: Ensure latest version of CKAN OAI-PMH extension is installed
+  become_user: root
+  become: yes
+  git:
+    repo: "https://github.com/UtrechtUniversity/ckanext-oaipmh.git"
+    dest: "/usr/lib/ckan/default/src/ckanext-oaipmh"
+    version: "{{ ckanext_oaipmh_version }}"
+    update: "yes"
+  notify: Restart Apache webserver
 
 
 - name: Install Yoda Catalog custom CKAN theme
