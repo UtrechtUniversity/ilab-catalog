@@ -175,6 +175,7 @@
     cd /usr/lib/ckan/default/src/ckanext-harvest/
     python3 -m pip install -r pip-requirements.txt
     deactivate
+    exit
     creates=/usr/lib/ckan/default/src/ckanext-harvest/
   notify: Restart Apache webserver
 
@@ -202,6 +203,7 @@
     python3 -m pip install -r requirements.txt
     python setup.py develop
     deactivate
+    exit
     creates=/usr/lib/ckan/default/src/ckanext-oaipmh/
   notify: Restart Apache webserver
 
@@ -226,6 +228,7 @@
     . default/bin/activate
     python3 -m pip install -e git+https://github.com/UtrechtUniversity/ilab-catalog-theme.git@{{ ckanext_custom_theme_version }}#egg=ckanext-custom_theme
     deactivate
+    exit
     creates=/usr/lib/ckan/default/src/ckanext-custom-theme/
   notify: Restart Apache webserver
 
@@ -241,48 +244,60 @@
 
 
 - name: Initialize CKAN database
-  become_user: ckan
+  become_user: root
   become: yes
   shell: |
-    . /usr/lib/ckan/default/bin/activate
+    su -s /bin/bash - ckan
+    cd /usr/lib/ckan
+    . default/bin/activate
     cd /usr/lib/ckan/default/src/ckan
-    ckan -c /etc/ckan/default/{{ uu_catalog_environment }}.ini db init
+    ckan -c /etc/ckan/default/ckan.ini db init
     deactivate
+    exit
   when: ckan_installed.changed
 
 
 - name: Check if CKAN admin user exists
-  become_user: ckan
+  become_user: root
   become: yes
   shell: |
-    . /usr/lib/ckan/default/bin/activate
+    su -s /bin/bash - ckan
+    cd /usr/lib/ckan
+    . default/bin/activate
     cd /usr/lib/ckan/default/src/ckan
-    ckan -c /etc/ckan/default/{{ uu_catalog_environment }}.ini user list
+    ckan -c /etc/ckan/default/ckan.ini user list
     deactivate
+    exit
   changed_when: False
   register: ckan_admin_user
 
 
 - name: Add CKAN admin user
-  become_user: ckan
+  become_user: root
   become: yes
   shell: |
-    . /usr/lib/ckan/default/bin/activate
+    su -s /bin/bash - ckan
+    cd /usr/lib/ckan
+    . default/bin/activate
     cd /usr/lib/ckan/default/src/ckan
-    ckan  -c /etc/ckan/default/{{ uu_catalog_environment }}.ini user add ckanadmin password="{{ ckan_admin_password }}" email=ckanadmin@localhost name=ckanadmin
-    ckan -c /etc/ckan/default/{{ uu_catalog_environment }}.ini sysadmin add ckanadmin
+    ckan  -c /etc/ckan/default/ckan.ini user add ckanadmin password="{{ ckan_admin_password }}" email=ckanadmin@localhost name=ckanadmin
+    ckan -c /etc/ckan/default/ckan.ini sysadmin add ckanadmin
     deactivate
+    exit
   when: ('"name=ckanadmin" not in ckan_admin_user.stdout') and not ansible_check_mode
 
 
 - name: Check if CKAN harvest user exists
-  become_user: ckan
+  become_user: root
   become: yes
   shell: |
-    . /usr/lib/ckan/default/bin/activate
+    su -s /bin/bash - ckan
+    cd /usr/lib/ckan
+    . default/bin/activate
     cd /usr/lib/ckan/default/src/ckan
-    ckan -c /etc/ckan/default/{{ uu_catalog_environment }}.ini user list
+    ckan -c /etc/ckan/default/ckan.ini user list
     deactivate
+    exit
   changed_when: False
   register: ckan_harvest_user
 
@@ -291,11 +306,14 @@
   become_user: root
   become: yes
   shell: |
-    . /usr/lib/ckan/default/bin/activate
+    su -s /bin/bash - ckan
+    cd /usr/lib/ckan
+    . default/bin/activate
     cd /usr/lib/ckan/default/src/ckan
-    ckan -c /etc/ckan/default/{{ uu_catalog_environment }}.ini user add harvest password="{{ ckan_harvest_password }}" email=harvest@localhost name=harvest
-    ckan -c /etc/ckan/default/{{ uu_catalog_environment }}.ini sysadmin add harvest
+    ckan -c /etc/ckan/default/ckan.ini user add harvest password="{{ ckan_harvest_password }}" email=harvest@localhost name=harvest
+    ckan -c /etc/ckan/default/ckan.ini sysadmin add harvest
     deactivate
+    exit
   when: ('"name=harvest" not in ckan_admin_user.stdout') and not ansible_check_mode
 
 
