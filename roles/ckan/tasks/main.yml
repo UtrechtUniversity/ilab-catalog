@@ -244,12 +244,12 @@
 
 
 - name: Initialize CKAN database
-  become_user: root
+  become_user: ckan
   become: yes
   shell: |
-    su -s /bin/bash - ckan
-    cd /usr/lib/ckan
-    . default/bin/activate
+    export LC_ALL=C.UTF-8
+    export LANG=C.UTF-8
+    . /usr/lib/ckan/default/bin/activate
     cd /usr/lib/ckan/default/src/ckan
     ckan -c /etc/ckan/default/ckan.ini db init
     deactivate
@@ -258,12 +258,12 @@
 
 
 - name: Check if CKAN admin user exists
-  become_user: root
+  become_user: ckan
   become: yes
   shell: |
-    su -s /bin/bash - ckan
-    cd /usr/lib/ckan
-    . default/bin/activate
+    export LC_ALL=C.UTF-8
+    export LANG=C.UTF-8
+    . /usr/lib/ckan/default/bin/activate
     cd /usr/lib/ckan/default/src/ckan
     ckan -c /etc/ckan/default/ckan.ini user list
     deactivate
@@ -273,27 +273,27 @@
 
 
 - name: Add CKAN admin user
-  become_user: root
+  become_user: ckan
   become: yes
   shell: |
-    su -s /bin/bash - ckan
-    cd /usr/lib/ckan
-    . default/bin/activate
+    export LC_ALL=C.UTF-8
+    export LANG=C.UTF-8
+    . /usr/lib/ckan/default/bin/activate
     cd /usr/lib/ckan/default/src/ckan
     ckan  -c /etc/ckan/default/ckan.ini user add ckanadmin password="{{ ckan_admin_password }}" email=ckanadmin@localhost name=ckanadmin
     ckan -c /etc/ckan/default/ckan.ini sysadmin add ckanadmin
     deactivate
     exit
-  when: ('"name=ckanadmin" not in ckan_admin_user.stdout') and not ansible_check_mode
+  when: not "name=ckanadmin" in ckan_admin_user.stdout and not ansible_check_mode
 
 
 - name: Check if CKAN harvest user exists
-  become_user: root
+  become_user: ckan
   become: yes
   shell: |
-    su -s /bin/bash - ckan
-    cd /usr/lib/ckan
-    . default/bin/activate
+    export LC_ALL=C.UTF-8
+    export LANG=C.UTF-8
+    . /usr/lib/ckan/default/bin/activate
     cd /usr/lib/ckan/default/src/ckan
     ckan -c /etc/ckan/default/ckan.ini user list
     deactivate
@@ -303,18 +303,18 @@
 
 
 - name: Add CKAN harvest user
-  become_user: root
+  become_user: ckan
   become: yes
   shell: |
-    su -s /bin/bash - ckan
-    cd /usr/lib/ckan
-    . default/bin/activate
+    export LC_ALL=C.UTF-8
+    export LANG=C.UTF-8
+    . /usr/lib/ckan/default/bin/activate
     cd /usr/lib/ckan/default/src/ckan
     ckan -c /etc/ckan/default/ckan.ini user add harvest password="{{ ckan_harvest_password }}" email=harvest@localhost name=harvest
     ckan -c /etc/ckan/default/ckan.ini sysadmin add harvest
     deactivate
     exit
-  when: ('"name=harvest" not in ckan_admin_user.stdout') and not ansible_check_mode
+  when: not "name=harvest" in ckan_admin_user.stdout and not ansible_check_mode
 
 
 - name: Ensure WSGI script file for CKAN is present
