@@ -7,7 +7,7 @@
 
 [program:ckan_gather_consumer]
 
-command=/usr/lib/ckan/default/bin/paster --plugin=ckanext-harvest harvester gather_consumer --config=/etc/ckan/default/{{ uu_catalog_environment }}.ini
+command=/usr/lib/ckan/default/bin/paster --plugin=ckanext-harvest harvester gather_consumer --config=/etc/ckan/default/ckan.ini
 
 ; user that owns virtual environment.
 user=ckan
@@ -21,7 +21,7 @@ startsecs=10
 
 [program:ckan_fetch_consumer]
 
-command=/usr/lib/ckan/default/bin/paster --plugin=ckanext-harvest harvester fetch_consumer --config=/etc/ckan/default/{{ uu_catalog_environment }}.ini
+command=/usr/lib/ckan/default/bin/paster --plugin=ckanext-harvest harvester fetch_consumer --config=/etc/ckan/default/ckan.ini
 
 ; user that owns virtual environment.
 user=ckan
