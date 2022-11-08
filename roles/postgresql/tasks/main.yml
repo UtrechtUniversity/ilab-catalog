@@ -1,29 +1,54 @@
 ---
 # copyright Utrecht University
 
+- name: Update CA certificates for downloading repository key
+  ansible.builtin.package:
+    name: ca-certificates
+
+# Can't use rpm_key ansible module, because cert validation fails on CentOS
+# 7, probably due to ancient dependencies.
+- name: Add PostgreSQL repository key
+  ansible.builtin.command:
+    cmd: rpm --import https://www.postgresql.org/media/keys/ACCC4CF8.asc
+
+
+- name: Add PostgreSQL package key
+  ansible.builtin.command:
+    cmd: rpm --import https://apt.postgresql.org/pub/repos/yum/RPM-GPG-KEY-PGDG-11
+
+
+- name: Add PostgreSQL repository
+  ansible.builtin.yum_repository:
+    name: postgres
+    description: PostgreSQL Yum repository
+    baseurl: https://yum.postgresql.org/11/redhat/rhel-7-x86_64
+
+
+# CKAN 2.9 requires PostgreSQL 9.5+, so we can't use the 9.2 version
+# that's bundled with CentOS.
 - name: Ensure PostgreSQL database is installed
   package:
     name: '{{ item }}'
     state: present
   with_items:
-    - postgresql-server
-    - postgresql-contrib
+    - postgresql11-server
+    - postgresql11-contrib
 
 
 - name: Ensure dependencies for Ansible PostgreSQL module are installed
   package:
-    name: python-psycopg2
+    name: python-psycopg2,python3-psycopg2
     state: present
 
 
 - name: Initialize PostgreSQL database
-  command: postgresql-setup initdb
-    creates=/var/lib/pgsql/data/postgresql.conf
+  command: postgresql-11-setup initdb
+    creates=/var/lib/pgsql/11/data/postgresql.conf
 
 
 - name: Password protect loopback IPv4 connections
   lineinfile:
-    dest: /var/lib/pgsql/data/pg_hba.conf
+    dest: /var/lib/pgsql/11/data/pg_hba.conf
     regexp: 'host\s+all\s+all\s+127.0.0.1/32'
     line: 'host all all 127.0.0.1/32 md5'
   notify: Restart PostgreSQL
@@ -31,7 +56,7 @@
 
 - name: Password protect loopback IPv6 connections
   lineinfile:
-    dest: /var/lib/pgsql/data/pg_hba.conf
+    dest: /var/lib/pgsql/11/data/pg_hba.conf
     regexp: 'host\s+all\s+all\s+::1/128'
     line: 'host all all ::1/128 md5'
   notify: Restart PostgreSQL
@@ -39,7 +64,7 @@
 
 - name: Listen on all interfaces
   lineinfile:
-    dest: /var/lib/pgsql/data/postgresql.conf
+    dest: /var/lib/pgsql/11/data/postgresql.conf
     line: "listen_addresses = '*'"
   notify: Restart PostgreSQL
 
@@ -47,14 +72,14 @@
 - name: Ensure private key file is available for PostgreSQL
   command: 'cp {{ openssl_private_dir }}/{{ openssl_key_signed }} {{ openssl_key_signed }}'
   args:
-    chdir: '/var/lib/pgsql/data'
+    chdir: '/var/lib/pgsql/11/data'
     creates: '{{ openssl_key_signed }}'
 
 
 - name: Ensure certificate file is available for PostgreSQL
   command: 'cp {{ openssl_certs_dir }}/{{ openssl_crt_signed }} {{ openssl_crt_signed }}'
   args:
-    chdir: '/var/lib/pgsql/data'
+    chdir: '/var/lib/pgsql/11/data'
     creates: '{{ openssl_crt_signed }}'
 
 
@@ -66,13 +91,13 @@
     owner: 'postgres'
     state: file
   with_items:
-    - '/var/lib/pgsql/data/{{ openssl_key_signed }}'
-    - '/var/lib/pgsql/data/{{ openssl_crt_signed }}'
+    - '/var/lib/pgsql/11/data/{{ openssl_key_signed }}'
+    - '/var/lib/pgsql/11/data/{{ openssl_crt_signed }}'
 
 
 - name: Ensure PostgreSQL is configured to use SSL
   ini_file:
-    path: /var/lib/pgsql/data/postgresql.conf
+    path: /var/lib/pgsql/11/data/postgresql.conf
     section: null
     option: '{{ item.option }}'
     value: '{{ item.value }}'
@@ -91,6 +116,6 @@
 
 - name: Ensure PostgreSQL is enabled and started
   service:
-    name: postgresql
+    name: postgresql-11
     enabled: yes
     state: started
