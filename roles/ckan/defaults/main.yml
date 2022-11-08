@@ -12,7 +12,7 @@ openssl_key_signed: localhost.key
 openssl_crt_signed: localhost.crt
 
 ckan_session_timeout: 3600
-ckan_version: 2.8.4
+ckan_version: 2.9.7
 
 # CKAN Database settings
 ckan_db_encoding: UTF-8

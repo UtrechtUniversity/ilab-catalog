@@ -10,7 +10,6 @@
     - postgresql-server
     - postgresql-devel
     - postgresql
-    - python-devel
     - libxslt
     - libxslt-devel
     - libxml2
@@ -24,6 +23,15 @@
     - policycoreutils-python
     - mod_wsgi
     - httpd
+    - centos-release-scl-rh
+
+
+# CKAN 2.9.x requires Python 3.7+ (documentation says 3.6, but this is wrong). Since only Python 3.6 is
+# packaged with CentOS 7, so we need to fetch it from SCLO-RH
+- name: Install Python 3.8
+  ansible.builtin.yum:
+    name: rh-python38-python,rh-python38-python-devel
+    enablerepo: centos-sclo-rh
 
 
 - name: Ensure a 'wheel' group exists
@@ -102,7 +110,6 @@
     owner: ckan
   with_items:
     - /usr/lib/ckan
-    - /usr/lib/ckan/default
     - /etc/ckan
     - /etc/ckan/default
 
@@ -110,28 +117,30 @@
 - name: Create virtual environment for CKAN
   become: yes
   become_user: ckan
-  shell: virtualenv --python /usr/bin/python2. 7--no-site-packages default
+  shell: virtualenv --python /opt/rh/rh-python38/root/bin/python3 --no-site-packages default
   args:
     chdir: /usr/lib/ckan
     creates: /usr/lib/ckan/default
 
 
-- name: Upgrade CKAN pip to latest Python 2 compatible version
-  become: yes
+- name: Upgrade CKAN pip to recent version
+  become: yes 
   become_user: ckan
   pip:
-    name: "pip < 21.0"
+    name: "pip"
     extra_args: "--upgrade"
-    virtualenv: /usr/lib/ckan/default
+    executable: /usr/lib/ckan/default/bin/pip3
 
 
+# Specific setuptools needed to work around zope dependency conflict
+# See https://github.com/ckan/ckan/issues/6427
 - name: Install setuptools for CKAN
   become: yes
   become_user: ckan
   pip:
-    name: setuptools
+    name: setuptools==44.1.0
     extra_args: "-U"
-    virtualenv: /usr/lib/ckan/default
+    executable: /usr/lib/ckan/default/bin/pip3
 
 
 - name: Download CKAN code
@@ -147,7 +156,7 @@
 
 - name: Copy CKAN code for local modifications
   synchronize:
-    src: "/usr/lib/ckan/default/src/ckan_orig"
+    src: "/usr/lib/ckan/default/src/ckan_orig/"
     dest: "/usr/lib/ckan/default/src/ckan"
   delegate_to: "{{ inventory_hostname }}"
 
@@ -158,7 +167,7 @@
   pip:
     name: "git+https://github.com/ckan/ckan.git@ckan-{{ ckan_version }}#egg=ckan"
     extra_args: "--ignore-installed --exists-action=w"
-    virtualenv: /usr/lib/ckan/default
+    executable: /usr/lib/ckan/default/bin/pip3
   register: ckan_installed
 
 
@@ -168,15 +177,9 @@
   pip:
     requirements: /usr/lib/ckan/default/src/ckan/requirements.txt
     extra_args: "--ignore-installed"
-    virtualenv: /usr/lib/ckan/default
-
-
-- name: Install flask_babel for CKAN
-  become: yes
-  become_user: ckan
-  pip:
-    name: flask_babel
-    virtualenv: /usr/lib/ckan/default
+    executable: /usr/lib/ckan/default/bin/pip3
+  environment:
+    C_INCLUDE_PATH: /opt/rh/rh-python38/root/usr/include/python3.8
 
 
 - name: Generate session secret
