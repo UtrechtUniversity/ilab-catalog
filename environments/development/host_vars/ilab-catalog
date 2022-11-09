@@ -15,5 +15,5 @@ ilab_catalog_version: development          # Yoda Catalog version to install (de
 ilab_catalog_fqdn: ilab-catalog.ckan.test  # Yoda Catalog fully qualified domain name (FQDN)
 ilab_catalog_environment: development      # Yoda Catalog environment: development, testing, acceptance or production
 ckan_database_password: test               # CKAN Postgresql database password
-ckan_admin_password: test                  # CKAN admin user ('ckanadmin') password
-ckan_harvest_password: test                # CKAN harvest user ('harvest') password
+ckan_admin_password: testtest              # CKAN admin user ('ckanadmin') password. Minimum eight characters.
+ckan_harvest_password: testtest            # CKAN harvest user ('harvest') password. Minimum eight characters.
