@@ -2,19 +2,19 @@
 # copyright Utrecht University
 
 - name: Ensure Supervisor is installed
-  package:
+  ansible.builtin.package:
     name: supervisor
     state: present
 
 
 - name: Ensure Supervisor configuration for CKAN harvesting is present
-  template:
+  ansible.builtin.template:
     src: "ckan_harvesting.ini.j2"
     dest: "/etc/supervisord.d/ckan_harvesting.ini"
 
 
 - name: Ensure CKAN log directories exist
-  file:
+  ansible.builtin.file:
     path: "{{ item }}"
     state: directory
     mode: 0755
@@ -25,19 +25,19 @@
 
 
 - name: Ensure Supervisor is started and enabled on boot
-  service:
+  ansible.builtin.service:
     name: supervisord
     state: started
-    enabled: yes
+    enabled: true
 
 
 - name: Add Supervisor ckan_gather_consumer task
-  supervisorctl:
+  community.general.supervisorctl:
     name: ckan_gather_consumer
     state: present
 
 
 - name: Add Supervisor ckan_fetch_consumer task
-  supervisorctl:
+  community.general.supervisorctl:
     name: ckan_fetch_consumer
     state: present

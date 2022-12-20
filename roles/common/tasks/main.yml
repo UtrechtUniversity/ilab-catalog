@@ -1,6 +1,9 @@
 ---
 # copyright Utrecht University
 
-- import_tasks: epel.yml
-- import_tasks: firewalld.yml
-- import_tasks: basics.yml
+- name: Import EPEL setup
+  ansible.builtin.import_tasks: epel.yml
+- name: Import firewalld setup
+  ansible.builtin.import_tasks: firewalld.yml
+- name: Import installation of basic packages
+  ansible.builtin.import_tasks: basics.yml

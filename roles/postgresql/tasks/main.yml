@@ -8,11 +8,13 @@
 # Can't use rpm_key ansible module, because cert validation fails on CentOS
 # 7, probably due to ancient dependencies.
 - name: Add PostgreSQL repository key
+  # noqa command-instead-of-module no-changed-when
   ansible.builtin.command:
     cmd: rpm --import https://www.postgresql.org/media/keys/ACCC4CF8.asc
 
 
 - name: Add PostgreSQL package key
+  # noqa command-instead-of-module no-changed-when
   ansible.builtin.command:
     cmd: rpm --import https://apt.postgresql.org/pub/repos/yum/RPM-GPG-KEY-PGDG-11
 
@@ -24,30 +26,59 @@
     baseurl: https://yum.postgresql.org/11/redhat/rhel-7-x86_64
 
 
+- name: Import SCLO repository key
+  ansible.builtin.rpm_key:
+    state: present
+    key: http://mirror.centos.org/centos/RPM-GPG-KEY-CentOS-7
+
+
+- name: Add SCL-RH repository for LLVM
+  ansible.builtin.package:
+    name: centos-release-scl-rh
+    state: present
+
+
+- name: Install LLVM toolset dependency from SCLO-RH for Postgresql11-devel package
+  ansible.builtin.yum:
+    name: llvm-toolset-7-clang
+    enablerepo: centos-sclo-rh
+
+
+- name: Ensure default PostgreSQL version has been removed
+  ansible.builtin.package:
+    name: '{{ item }}'
+    state: present
+  with_items:
+    - postgresql
+    - postgresql-server
+    - postgresql-contrib
+
+
 # CKAN 2.9 requires PostgreSQL 9.5+, so we can't use the 9.2 version
 # that's bundled with CentOS.
 - name: Ensure PostgreSQL database is installed
-  package:
+  ansible.builtin.package:
     name: '{{ item }}'
     state: present
   with_items:
     - postgresql11-server
     - postgresql11-contrib
+    - postgresql11-devel
 
 
 - name: Ensure dependencies for Ansible PostgreSQL module are installed
-  package:
+  ansible.builtin.package:
     name: python-psycopg2,python3-psycopg2
     state: present
 
 
 - name: Initialize PostgreSQL database
-  command: postgresql-11-setup initdb
+  ansible.builtin.command: postgresql-11-setup initdb
     creates=/var/lib/pgsql/11/data/postgresql.conf
 
 
 - name: Password protect loopback IPv4 connections
-  lineinfile:
+  ansible.builtin.lineinfile:
     dest: /var/lib/pgsql/11/data/pg_hba.conf
     regexp: 'host\s+all\s+all\s+127.0.0.1/32'
     line: 'host all all 127.0.0.1/32 md5'
@@ -55,7 +86,7 @@
 
 
 - name: Password protect loopback IPv6 connections
-  lineinfile:
+  ansible.builtin.lineinfile:
     dest: /var/lib/pgsql/11/data/pg_hba.conf
     regexp: 'host\s+all\s+all\s+::1/128'
     line: 'host all all ::1/128 md5'
@@ -63,28 +94,28 @@
 
 
 - name: Listen on all interfaces
-  lineinfile:
+  ansible.builtin.lineinfile:
     dest: /var/lib/pgsql/11/data/postgresql.conf
     line: "listen_addresses = '*'"
   notify: Restart PostgreSQL
 
 
 - name: Ensure private key file is available for PostgreSQL
-  command: 'cp {{ openssl_private_dir }}/{{ openssl_key_signed }} {{ openssl_key_signed }}'
+  ansible.builtin.command: 'cp {{ openssl_private_dir }}/{{ openssl_key_signed }} {{ openssl_key_signed }}'
   args:
     chdir: '/var/lib/pgsql/11/data'
     creates: '{{ openssl_key_signed }}'
 
 
 - name: Ensure certificate file is available for PostgreSQL
-  command: 'cp {{ openssl_certs_dir }}/{{ openssl_crt_signed }} {{ openssl_crt_signed }}'
+  ansible.builtin.command: 'cp {{ openssl_certs_dir }}/{{ openssl_crt_signed }} {{ openssl_crt_signed }}'
   args:
     chdir: '/var/lib/pgsql/11/data'
     creates: '{{ openssl_crt_signed }}'
 
 
 - name: Ensure PostgreSQL has access to PKI files
-  file:
+  ansible.builtin.file:
     path: '{{ item }}'
     mode: 0600
     group: 'postgres'
@@ -96,7 +127,7 @@
 
 
 - name: Ensure PostgreSQL is configured to use SSL
-  ini_file:
+  community.general.ini_file:
     path: /var/lib/pgsql/11/data/postgresql.conf
     section: null
     option: '{{ item.option }}'
@@ -115,7 +146,7 @@
 
 
 - name: Ensure PostgreSQL is enabled and started
-  service:
+  ansible.builtin.service:
     name: postgresql-11
-    enabled: yes
+    enabled: true
     state: started

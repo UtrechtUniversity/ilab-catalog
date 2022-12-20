@@ -3,7 +3,7 @@
 # This playbook provisions Yoda Catalog CKAN instance with the Zabbix agent, PostgreSQL monitoring and Zabbix user access to the database.
 
 - hosts: localhost
-  gather_facts: False
+  gather_facts: false
   pre_tasks:
     - name: Verify Ansible version meets requirements
       assert:
@@ -14,7 +14,7 @@
 
 - name: Provision Yoda Catalog CKAN server with Zabbix monitoring
   hosts: all
-  become: yes
+  become: true
   roles:
     - zabbix-agent
     - role: zabbix-postgresql

@@ -1,0 +1,25 @@
+- name: Install nginx for reverse proxy
+  ansible.builtin.package:
+    name: nginx
+    state: present
+
+
+- name: Allow public to ports for Nginx in firewall
+  ansible.posix.firewalld:
+    port: '{{ item }}'
+    permanent: true
+    state: enabled
+    immediate: true
+  with_items:
+    - 80/tcp
+    - 443/tcp
+  notify: Restart firewall
+
+
+- name: Create nginx cache directory
+  ansible.builtin.file:
+    path: /var/cache/nginx
+    state: directory
+    owner: nginx
+    group: nginx
+    mode: 0770

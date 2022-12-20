@@ -2,17 +2,18 @@
 # copyright Utrecht University
 
 - name: Ensure Ansible dependencies are installed
-  package:
+  ansible.builtin.package:
     name: '{{ item }}'
     state: present
   with_items:
-  - libsemanage-python
-  - libselinux-python
-  - policycoreutils-python
+    - libsemanage-python
+    - libselinux-python
+    - policycoreutils-python
+    - python2-cryptography
 
 
 - name: Ensure basics (vim, bind-utils, etc.) are installed
-  package:
+  ansible.builtin.package:
     name: '{{ item }}'
     state: present
   with_items:

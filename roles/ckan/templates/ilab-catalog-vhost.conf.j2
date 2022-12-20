@@ -15,7 +15,7 @@
     RequestHeader set Host '{{ ilab_catalog_fqdn }}'
     RequestHeader unset X-Forwarded-Host
 
-    WSGIScriptAlias / /etc/ckan/default/apache.wsgi
+    WSGIScriptAlias / /etc/ckan/default/wsgi.py
 
     # Pass authorization info on (needed for rest api).
     WSGIPassAuthorization On

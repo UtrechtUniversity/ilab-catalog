@@ -2,13 +2,13 @@
 # copyright Utrecht University
 
 - name: Check if Zabbix agent is installable from repository
-  yum:
+  ansible.builtin.yum:
     list: '{{ zabbix_agent.package }}'
   register: zabbix_agent_repo
 
 
 - name: Download Zabbix agent rpm
-  get_url:
+  ansible.builtin.get_url:
     url: '{{ zabbix_agent.url }}/{{ zabbix_agent.filename }}'
     dest: '{{ rpm_dest_dir }}/{{ zabbix_agent.filename }}'
     checksum: '{{ zabbix_agent.checksum }}'
@@ -16,41 +16,41 @@
 
 
 - name: Install Zabbix agent from downloaded rpm
-  package:
+  ansible.builtin.package:
     name: '{{ rpm_dest_dir }}/{{ zabbix_agent.filename }}'
     state: present
   when: not zabbix_agent_repo.results and not repo_only
 
 
 - name: Ensure Zabbix agent rpm is installed
-  package:
+  ansible.builtin.package:
     name: '{{ zabbix_agent.package }}'
     state: present
   when: zabbix_agent_repo.results
 
 
 - name: Enable the Zabbix agent service
-  service:
+  ansible.builtin.service:
     name: zabbix-agent
-    enabled: yes
+    enabled: true
     use: service
 
 
 - name: Allow Zabbix agent to start
-  selinux_permissive:
+  community.general.selinux_permissive:
     name: zabbix_agent_t
     permissive: true
   when: ansible_selinux
 
 
 - name: Generate Zabbix agent PSK
-  shell: openssl rand -hex 256 > /etc/zabbix/zabbix_agentd.psk
+  ansible.builtin.shell: openssl rand -hex 256 > /etc/zabbix/zabbix_agentd.psk
     creates=/etc/zabbix/zabbix_agentd.psk
   when: not ansible_check_mode
 
 
 - name: Ensure right file ownership on zabbix_agentd.psk
-  file:
+  ansible.builtin.file:
     path: /etc/zabbix/zabbix_agentd.psk
     owner: zabbix
     group: zabbix
@@ -58,7 +58,7 @@
 
 
 - name: Configure Zabbix agent
-  template:
+  ansible.builtin.template:
     src: zabbix_agentd.conf.j2
     dest: /etc/zabbix/zabbix_agentd.conf
     owner: zabbix
