@@ -1,0 +1,8 @@
+skip_list:
+  - experimental
+  - meta-no-info
+  # We sometimes use tasks rather than handlers in order to work around Ansible limitations
+  # in ordering handlers and triggering (only) specific handlers.
+  - no-handler
+
+parseable: true
