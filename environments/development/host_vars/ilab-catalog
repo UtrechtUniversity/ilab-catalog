@@ -4,7 +4,7 @@
 ########################
 # Ansible configuration
 ########################
-ansible_host: 192.168.70.10                       # Yoda Catalog host
+ansible_host: 192.168.63.10                       # Yoda Catalog host
 ansible_user: vagrant                             # Administrative user on instance for Ansible
 ansible_ssh_private_key_file: vagrant/ssh/vagrant # Path to private key file of administrative user
 
@@ -17,3 +17,10 @@ ilab_catalog_environment: development      # Yoda Catalog environment: developme
 ckan_database_password: test               # CKAN Postgresql database password
 ckan_admin_password: testtest              # CKAN admin user ('ckanadmin') password. Minimum eight characters.
 ckan_harvest_password: testtest            # CKAN harvest user ('harvest') password. Minimum eight characters.
+
+
+#########################
+# Plugin versions
+#########################
+
+ckanext_custom_theme_version: development
