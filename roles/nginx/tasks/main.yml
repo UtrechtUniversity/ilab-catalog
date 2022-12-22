@@ -23,3 +23,9 @@
     owner: nginx
     group: nginx
     mode: 0770
+
+
+- name: Ensure nginx service is enabled
+  ansible.builtin.systemd:
+    name: nginx
+    enabled: true

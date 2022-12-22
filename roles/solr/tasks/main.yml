@@ -93,4 +93,3 @@
     state: started
     daemon_reload: true
     enabled: true
-  when: solr_installed.changed
