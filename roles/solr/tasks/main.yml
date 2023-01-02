@@ -53,9 +53,10 @@
 
 - name: Create Solr CKAN configuration
   become_user: solr
-  ansible.builtin.command: /opt/solr/bin/solr create -c ckan
-    creates=/var/solr/data/ckan/conf/solrconfig.xml
-  when: solr_installed.changed
+  become: true
+  ansible.builtin.command:
+    cmd: /opt/solr/bin/solr create -c ckan
+    creates: /var/solr/data/ckan/conf/solrconfig.xml
 
 
 - name: Ensure managed-schema is absent
