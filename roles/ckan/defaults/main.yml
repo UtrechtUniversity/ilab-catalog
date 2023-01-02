@@ -1,9 +1,9 @@
 ---
 # copyright Utrecht University
 
-# I-lab Catalog configuration
-ilab_catalog_version: development          # I-lab Catalog version to install
-ilab_catalog_fqdn: ilab-catalog.ckan.test  # I-lab Catalog fully qualified domain name (FQDN)
+# Yoda Catalog configuration
+ilab_catalog_version: development          # Yoda Catalog version to install
+ilab_catalog_fqdn: ilab-catalog.ckan.test  # fully qualified domain name (FQDN)
 
 # OpenSSL configuration.
 openssl_private_dir: '/etc/pki/tls/private'
@@ -11,7 +11,15 @@ openssl_certs_dir: '/etc/pki/tls/certs'
 openssl_key_signed: localhost.key
 openssl_crt_signed: localhost.crt
 
+ckan_session_timeout: 3600
+ckan_version: 2.9.7
+
+# CKAN Database settings
+ckan_db_encoding: UTF-8
+ckan_db_lc_collate: en_US.utf8
+ckan_db_lc_ctype: en_US.utf8
+
 # CKAN extension verions
-ckanext_harvest_version: 7dd82a0e01ba85b7f2f4cc02b66dd4948ed7093e
-ckanext_oaipmh_version: 123aec59231dabea9b776063502131606a15f8c1
-ckanext_custom_theme_version: '{{ ilab_catalog_version }}'
+ckanext_harvest_version: v1.3.4
+ckanext_oaipmh_version: v1.0.0
+ckanext_custom_theme_version: v1.0.0

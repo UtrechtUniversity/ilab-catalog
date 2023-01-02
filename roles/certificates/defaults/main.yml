@@ -1,6 +1,19 @@
 ---
 # copyright Utrecht University
 
+# The certificate mode specifies how the playbook handles certificates:
+# selfsigned (default): install a selfsigned certificate if no certificate is
+#                       present
+# ignore:               don't install any certificates
+# static:               install a certificate provided by the playbook
+#                       configuration
+cert_mode: selfsigned
+
+# Variables for configuring the certificate when cert_mode is set to static
+# static_cert_key
+# static_cert_crt
+# static_cert_chain
+
 openssl_private_dir: '/etc/pki/tls/private'
 openssl_certs_dir: '/etc/pki/tls/certs'
 openssl_dhparams: dhparams.pem
@@ -8,6 +21,8 @@ openssl_dhparams: dhparams.pem
 openssl_key_selfsigned: selfsigned_localhost.key
 openssl_csr_selfsigned: selfsigned_localhost.csr
 openssl_crt_selfsigned: selfsigned_localhost.crt
+openssl_chain: chain.crt
+openssl_crt_signed_and_chain: localhost_and_chain.crt
 
 openssl_key_signed: localhost.key
 openssl_csr_signed: localhost.csr
@@ -15,4 +30,4 @@ openssl_crt_signed: localhost.crt
 
 openssl_o: 'Utrecht University'
 openssl_c: 'NL'
-openssl_localityName: 'Utrecht'
+openssl_localityname: 'Utrecht'

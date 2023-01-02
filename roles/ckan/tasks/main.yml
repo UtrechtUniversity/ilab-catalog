@@ -2,15 +2,12 @@
 # copyright Utrecht University
 
 - name: Ensure CKAN prerequisites are installed
-  package:
+  ansible.builtin.package:
     name: '{{ item }}'
     state: present
   with_items:
     - xml-commons
-    - postgresql-server
-    - postgresql-devel
-    - postgresql
-    - python-devel
+    - postgresql11-contrib
     - libxslt
     - libxslt-devel
     - libxml2
@@ -24,16 +21,32 @@
     - policycoreutils-python
     - mod_wsgi
     - httpd
+    - centos-release-scl-rh
+    - supervisor
+
+
+- name: Ensure supervisord is running
+  ansible.builtin.service:
+    name: supervisord
+    state: started
+
+
+# CKAN 2.9.x requires Python 3.7+ (documentation says 3.6, but this is wrong). Since only Python 3.6 is
+# packaged with CentOS 7, so we need to fetch it from SCLO-RH
+- name: Install Python 3.8
+  ansible.builtin.yum:
+    name: rh-python38-python,rh-python38-python-devel,rh-python38-python-libs
+    enablerepo: centos-sclo-rh
 
 
 - name: Ensure a 'wheel' group exists
-  group:
+  ansible.builtin.group:
     name: wheel
     state: present
 
 
 - name: Allow 'wheel' group to have passwordless sudo
-  lineinfile:
+  ansible.builtin.lineinfile:
     dest: /etc/sudoers
     state: present
     regexp: '^%wheel'
@@ -42,30 +55,30 @@
 
 
 - name: Ensure CKAN user exists
-  user:
+  ansible.builtin.user:
     name: ckan
     comment: "CKAN User"
     home: /usr/lib/ckan
     shell: /bin/bash
     groups: wheel
-    append: yes
+    append: true
 
 
 - name: Ensure CKAN database exists
   become_user: postgres
-  become: yes
-  postgresql_db:
+  become: true
+  community.general.postgresql_db:
     name: "ckan_default"
-    encoding: UTF-8
-    lc_collate: en_US.utf8
-    lc_ctype: en_US.utf8
+    encoding: "{{ ckan_db_encoding }}"
+    lc_collate: "{{ ckan_db_lc_collate }}"
+    lc_ctype: "{{ ckan_db_lc_ctype }}"
     template: template0
 
 
 - name: Ensure CKAN database user exists
   become_user: postgres
-  become: yes
-  postgresql_user:
+  become: true
+  community.general.postgresql_user:
     db: "ckan_default"
     name: "ckan_default"
     password: "{{ ckan_database_password }}"
@@ -73,21 +86,21 @@
 
 
 - name: Allow Apache to connect to Postgresql
-  seboolean:
+  ansible.posix.seboolean:
     name: httpd_can_network_connect_db
-    state: yes
-    persistent: yes
+    state: true
+    persistent: true
 
 
 - name: Allow Apache to connect to Redis and SOLR
-  seboolean:
+  ansible.posix.seboolean:
     name: httpd_can_network_connect
-    state: yes
-    persistent: yes
+    state: true
+    persistent: true
 
 
 - name: Allow Apache to listen on port 8983 for Solr
-  seport:
+  community.general.seport:
     ports: 8888
     proto: tcp
     setype: http_port_t
@@ -95,239 +108,448 @@
 
 
 - name: Ensure CKAN directories exist
-  file:
+  ansible.builtin.file:
     path: "{{ item }}"
     state: directory
     mode: 0755
     owner: ckan
   with_items:
     - /usr/lib/ckan
-    - /usr/lib/ckan/default
     - /etc/ckan
     - /etc/ckan/default
 
 
-- name: Run CKAN installation script
+- name: Create virtual environment for CKAN
+  become: true
   become_user: ckan
-  shell: |
-    virtualenv --no-site-packages default
-    . default/bin/activate
-    pip install --upgrade pip
-    pip install -U setuptools
-    pip install --ignore-installed -e git+https://github.com/okfn/ckan.git@ckan-2.7.3#egg=ckan
-    pip install --ignore-installed -r default/src/ckan/pip-requirements-docs.txt
-    exit
+  ansible.builtin.command: virtualenv --python /opt/rh/rh-python38/root/bin/python3 --no-site-packages default
   args:
     chdir: /usr/lib/ckan
-    creates: /usr/lib/ckan/default/src/ckan/ckan/config/solr/schema.xml
+    creates: /usr/lib/ckan/default
+
+
+# Needed for upgrading PyOpenSSL
+- name: Update pip in CKAN virtualenv to recent version
+  become: true
+  become_user: ckan
+  ansible.builtin.pip:
+    name: pip == 22.3.1
+    virtualenv: /usr/lib/ckan/default
+
+
+# Needed to work around dependency issues with harvesting plugin that would otherwise
+# be triggered when initializing the CKAN database. Version needs to match with the
+# one in the CKAN harvest extension requirements.
+- name: Update PyOpenSSL in CKAN virtual environment
+  become: true
+  become_user: ckan
+  ansible.builtin.pip:
+    name: pyOpenSSL == 21.0.0
+    virtualenv: /usr/lib/ckan/default
+
+
+# Pin cryptography module version to work around symbol incompatibility with
+# PyOpenSSL version that is needed to work around other dependency issues with
+# harvesting plugin.
+- name: Install cryptography module for CKAN
+  become: true
+  become_user: ckan
+  ansible.builtin.pip:
+    name: cryptography == 37.0.1
+    virtualenv: /usr/lib/ckan/default
+
+
+- name: Upgrade CKAN pip to recent version
+  become: true
+  become_user: ckan
+  ansible.builtin.pip:
+    name: "pip"
+    extra_args: "--upgrade"
+    executable: /usr/lib/ckan/default/bin/pip3
+
+
+# Specific setuptools needed to work around zope dependency conflict
+# See https://github.com/ckan/ckan/issues/6427
+- name: Install setuptools for CKAN
+  become: true
+  become_user: ckan
+  ansible.builtin.pip:
+    name: setuptools==44.1.0
+    extra_args: "-U"
+    executable: /usr/lib/ckan/default/bin/pip3
+
+
+- name: Download CKAN code
+  become_user: ckan
+  become: true
+  ansible.builtin.git:
+    repo: "https://github.com/ckan/ckan.git"
+    dest: "/usr/lib/ckan/default/src/ckan_orig"
+    version: "ckan-{{ ckan_version }}"
+    update: true
+  notify: Supervisor restart all
+
+
+- name: Copy CKAN code for local modifications
+  ansible.posix.synchronize:
+    src: "/usr/lib/ckan/default/src/ckan_orig/"
+    dest: "/usr/lib/ckan/default/src/ckan"
+  delegate_to: "{{ inventory_hostname }}"
+
+
+- name: Install CKAN
+  become: true
+  become_user: ckan
+  ansible.builtin.pip:
+    name: "git+https://github.com/ckan/ckan.git@ckan-{{ ckan_version }}#egg=ckan"
+    extra_args: "--ignore-installed --exists-action=w"
+    executable: /usr/lib/ckan/default/bin/pip3
   register: ckan_installed
 
 
+# The workaround for the Zope dependency on a specific version
+# version of setuptools (see above) results in a conflict with
+# the installation process for psycopg2, which has a hard dependency
+# on a different setuptools version. Adjust CKAN psycopg2 requirement to
+# work around this.
+- name: Adjust CKAN requirements for psycopg2
+  become_user: ckan
+  become: true
+  ansible.builtin.lineinfile:
+    dest: /usr/lib/ckan/default/src/ckan/requirements.txt
+    regexp: 'psycopg2'
+    line: 'psycopg2-binary==2.9.3'
+
+
+- name: Install CKAN dependencies
+  become: true
+  become_user: ckan
+  ansible.builtin.pip:
+    requirements: /usr/lib/ckan/default/src/ckan/requirements.txt
+    extra_args: "--ignore-installed"
+    executable: /usr/lib/ckan/default/bin/pip3
+  environment:
+    C_INCLUDE_PATH: /opt/rh/rh-python38/root/usr/include/python3.8
+
+
 - name: Generate session secret
-  shell: openssl rand -base64 32 > /etc/ckan/default/session_secret
-    creates=/etc/ckan/default/session_secret
+  ansible.builtin.shell: openssl rand -base64 32 > /etc/ckan/default/session_secret
+  args:
+    creates: /etc/ckan/default/session_secret
   when: not ansible_check_mode
 
 
 - name: Read session secret
-  command: cat /etc/ckan/default/session_secret
+  ansible.builtin.command: cat /etc/ckan/default/session_secret
   register: session_secret
+  check_mode: false
   changed_when: false
 
 
 - name: Generate unique application instance identifier
-  shell: 'echo {{ ansible_hostname | to_uuid }} > /etc/ckan/default/app_instance_uuid
-    creates=/etc/ckan/default/app_instance_uuid'
+  ansible.builtin.shell: 'echo {{ ansible_hostname | to_uuid }} > /etc/ckan/default/app_instance_uuid'
+  args:
+    creates: /etc/ckan/default/app_instance_uuid'
   when: not ansible_check_mode
 
 
 - name: Read unique application instance identifier
-  command: cat /etc/ckan/default/app_instance_uuid
+  ansible.builtin.command: cat /etc/ckan/default/app_instance_uuid
   register: app_instance_uuid
+  check_mode: false
   changed_when: false
 
 
 - name: Ensure CKAN config is present
-  template:
+  ansible.builtin.template:
     src: "configuration.ini.j2"
-    dest: "/etc/ckan/default/{{ ilab_catalog_environment }}.ini"
-  notify: Restart Apache webserver
-  when: not ansible_check_mode
+    dest: "/etc/ckan/default/ckan.ini"
+  notify: Supervisor restart all
 
 
-- name: Ensure CKAN schema is symlinked in Solr
+- name: Create CKAN Solr config directory
+  ansible.builtin.file:
+    path: /var/solr/data/ckan/conf
+    state: directory
+    owner: solr
+    group: solr
+    mode: 0755
+
+
+- name: Install CKAN Solr schema
   become_user: root
-  become: yes
-  file:
-    src: /usr/lib/ckan/default/src/ckan/ckan/config/solr/schema.xml
-    dest: /var/solr/data/ckan/conf/schema.xml
-    state: link
-  register: link_schema
-  notify: Restart Solr
+  become: true
+  ansible.builtin.copy:
+    src: /usr/lib/ckan/default/src/ckan/ckan/config/solr/schema.solr8.xml
+    dest: /var/solr/data/ckan/schema.xml
+    owner: solr
+    group: solr
+    mode: 0644
+    remote_src: true
+  register: solr_copy_schema
+
+
+- name: Ensure Solr QueryElevationComponent is initialized
+  ansible.builtin.copy:
+    src: /opt/solr-8.11.2/example/files/conf/elevate.xml
+    dest: /var/solr/data/ckan/conf/elevate.xml
+    owner: solr
+    group: solr
+    mode: 0644
+    remote_src: true
+  register: solr_init_queryelevation
+
+
+# Can't use handler here because of dependency of database initialization on
+# Solr, and we don't want to flush other handlers yet.
+- name: Restart Solr after changes
+  become_user: root
+  become: true
+  ansible.builtin.systemd:
+    name: solr
+    state: restarted
+  when: solr_copy_schema.changed or solr_init_queryelevation.changed
 
 
 - name: Ensure CKAN who.ini is symlinked
   become_user: root
-  become: yes
-  file:
+  become: true
+  ansible.builtin.file:
     src: /usr/lib/ckan/default/src/ckan/who.ini
     dest: /etc/ckan/default/who.ini
     state: link
 
 
+# Need to re-initialize setuptools after CKAN install, because
+# otherwise harvesting plugin and UWSGI installation will fail due to
+# setuptools data being incompatible
+- name: Install setuptools for CKAN harvesting plugin
+  become: true
+  become_user: ckan
+  ansible.builtin.pip:
+    name: setuptools==44.1.0
+    extra_args: "-U"
+    executable: /usr/lib/ckan/default/bin/pip3
+
+
+- name: Install UWSGI in CKAN virtual environment
+  become: true
+  become_user: ckan
+  ansible.builtin.pip:
+    name: uwsgi
+    executable: /usr/lib/ckan/default/bin/pip3
+  environment:
+    C_INCLUDE_PATH: /opt/rh/rh-python38/root/usr/include/python3.8
+
+
 - name: Install CKAN harvest extension
-  become_user: root
-  become: yes
-  shell: |
-    su -s /bin/bash - ckan
-    cd /usr/lib/ckan
-    . default/bin/activate
-    pip install -e git+https://github.com/ckan/ckanext-harvest.git@{{ ckanext_harvest_version }}#egg=ckanext-harvest
-    cd /usr/lib/ckan/default/src/ckanext-harvest/
-    pip install -r pip-requirements.txt
-    exit
-    creates=/usr/lib/ckan/default/src/ckanext-harvest/
-  notify: Restart Apache webserver
+  become: true
+  become_user: ckan
+  ansible.builtin.pip:
+    name: git+https://github.com/ckan/ckanext-harvest.git@{{ ckanext_harvest_version }}#egg=ckanext-harvest
+    executable: /usr/lib/ckan/default/bin/pip3
+  notify: Supervisor restart all
 
 
-- name: Ensure latest version of CKAN harvest extension is installed
-  become_user: root
-  become: yes
-  git:
+- name: Download CKAN harvest extension code
+  become_user: ckan
+  become: true
+  ansible.builtin.git:
     repo: "https://github.com/ckan/ckanext-harvest.git"
-    dest: "/usr/lib/ckan/default/src/ckanext-harvest/"
+    dest: "/usr/lib/ckan/default/src/ckanext-harvest-orig/"
     version: "{{ ckanext_harvest_version }}"
-    update: "yes"
-  notify: Restart Apache webserver
+    update: true
+  notify: Supervisor restart all
+
+
+- name: Copy CKAN harvest extension code for local modifications
+  ansible.posix.synchronize:
+    src: "/usr/lib/ckan/default/src/ckanext-harvest-orig/"
+    dest: "/usr/lib/ckan/default/src/ckanext-harvest"
+  delegate_to: "{{ inventory_hostname }}"
+  notify: Supervisor restart all
+
+
+# Backport https://github.com/ckan/ckanext-harvest/commit/98edcd3ad7e3f6208797df90b7a4ebe76b1104d6
+# to work around PyOpenSSL dependency issue
+- name: Adjust CKAN harvest extension dependencies to work around PyOpenSSL issues
+  become_user: ckan
+  become: true
+  ansible.builtin.lineinfile:
+    dest: /usr/lib/ckan/default/src/ckanext-harvest/pip-requirements.txt
+    regexp: 'OpenSSL' # PyOpenSSL does not match because of capitalization
+    line: 'PyOpenSSL==21.0.0'
+
+
+- name: Install CKAN harvest extension dependencies
+  become: true
+  become_user: ckan
+  ansible.builtin.pip:
+    requirements: /usr/lib/ckan/default/src/ckanext-harvest/pip-requirements.txt
+    executable: /usr/lib/ckan/default/bin/pip3
+  notify: Supervisor restart all
 
 
 - name: Install CKAN OAI-PMH extension
-  become_user: root
-  become: yes
-  shell: |
-    su -s /bin/bash - ckan
-    cd /usr/lib/ckan
-    . default/bin/activate
-    pip install -e git+https://github.com/UtrechtUniversity/ckanext-oaipmh.git@{{ ckanext_oaipmh_version }}#egg=ckanext-oaipmh
-    cd /usr/lib/ckan/default/src/ckanext-oaipmh/
-    pip install -r requirements.txt
-    python setup.py develop
-    exit
-    creates=/usr/lib/ckan/default/src/ckanext-oaipmh/
-  notify: Restart Apache webserver
+  become: true
+  become_user: ckan
+  ansible.builtin.pip:
+    name: git+https://github.com/UtrechtUniversity/ckanext-oaipmh.git@{{ ckanext_oaipmh_version }}#egg=ckanext-oaipmh
+    executable: /usr/lib/ckan/default/bin/pip3
+  notify: Supervisor restart all
 
 
-- name: Ensure latest version of CKAN OAI-PMH extension is installed
+- name: Download CKAN OAI-PMH extension code
   become_user: root
-  become: yes
-  git:
+  become: true
+  ansible.builtin.git:
     repo: "https://github.com/UtrechtUniversity/ckanext-oaipmh.git"
     dest: "/usr/lib/ckan/default/src/ckanext-oaipmh"
     version: "{{ ckanext_oaipmh_version }}"
-    update: "yes"
-  notify: Restart Apache webserver
+    update: true
+  notify: Supervisor restart all
 
 
-- name: Install I-Lab Catalog custom CKAN theme
+- name: Install CKAN OAI-PMH extension dependencies
+  become: true
+  become_user: ckan
+  ansible.builtin.pip:
+    requirements: /usr/lib/ckan/default/src/ckanext-oaipmh/requirements.txt
+    executable: /usr/lib/ckan/default/bin/pip3
+  notify: Supervisor restart all
+
+
+- name: Download custom CKAN theme
   become_user: root
-  become: yes
-  shell: |
-    su -s /bin/bash - ckan
-    cd /usr/lib/ckan
-    . default/bin/activate
-    pip install -e git+https://github.com/UtrechtUniversity/ilab-catalog-theme.git@{{ ckanext_custom_theme_version }}#egg=ckanext-custom_theme
-    exit
-    creates=/usr/lib/ckan/default/src/ckanext-custom-theme/
-  notify: Restart Apache webserver
-
-
-- name: Ensure latest version of I-Lab Catalog custom CKAN theme is installed
-  become_user: root
-  become: yes
-  git:
+  become: true
+  ansible.builtin.git:
     repo: "https://github.com/UtrechtUniversity/ilab-catalog-theme.git"
     dest: "/usr/lib/ckan/default/src/ckanext-custom-theme/"
     version: "{{ ckanext_custom_theme_version }}"
-    update: "yes"
+    update: true
+
+
+- name: Install custom CKAN theme
+  become: true
+  become_user: ckan
+  ansible.builtin.pip:
+    name: git+https://github.com/UtrechtUniversity/ilab-catalog-theme.git@{{ ckanext_custom_theme_version }}#egg=ckanext-custom_theme
+    executable: /usr/lib/ckan/default/bin/pip3
+  notify: Supervisor restart all
+
+
+- name: Check if CKAN database has been initialized
+  become: true
+  become_user: postgres
+  ansible.builtin.command:
+    cmd: "psql -d ckan_default -U postgres -c \"SELECT * FROM information_schema.tables where table_name = 'user';\""
+  register: database_initialized
+  changed_when: false
 
 
 - name: Initialize CKAN database
   become_user: ckan
-  become: yes
-  shell: |
+  become: true
+  ansible.builtin.shell: |
     . /usr/lib/ckan/default/bin/activate
     cd /usr/lib/ckan/default/src/ckan
-    paster db init -c /etc/ckan/default/{{ ilab_catalog_environment }}.ini
-    paster --plugin=ckanext-harvest harvester initdb --config=/etc/ckan/default/{{ ilab_catalog_environment }}.ini
+    ckan --config /etc/ckan/default/ckan.ini db init
+    ckan --config /etc/ckan/default/ckan.ini harvester initdb
     exit
-  when: ckan_installed.changed
+  when: '"(1 row)" not in database_initialized.stdout'
 
 
 - name: Check if CKAN admin user exists
   become_user: ckan
-  become: yes
-  shell: |
+  become: true
+  ansible.builtin.shell: |
     . /usr/lib/ckan/default/bin/activate
     cd /usr/lib/ckan/default/src/ckan
-    paster --plugin=ckan user list -c /etc/ckan/default/{{ ilab_catalog_environment }}.ini
+    ckan --config /etc/ckan/default/ckan.ini user list
     exit
-  changed_when: False
+  changed_when: false
   register: ckan_admin_user
 
 
 - name: Add CKAN admin user
   become_user: ckan
-  become: yes
-  shell: |
+  become: true
+  ansible.builtin.shell: |
     . /usr/lib/ckan/default/bin/activate
     cd /usr/lib/ckan/default/src/ckan
-    paster user add ckanadmin password="{{ ckan_admin_password }}" email=ckanadmin@localhost name=ckanadmin -c /etc/ckan/default/{{ ilab_catalog_environment }}.ini
-    paster sysadmin add ckanadmin -c /etc/ckan/default/{{ ilab_catalog_environment }}.ini
+    ckan --config /etc/ckan/default/ckan.ini user add ckanadmin password="{{ ckan_admin_password }}" email=ckanadmin@localhost
+    ckan --config /etc/ckan/default/ckan.ini sysadmin add ckanadmin
     exit
   when: ('"name=ckanadmin" not in ckan_admin_user.stdout') and not ansible_check_mode
 
 
 - name: Check if CKAN harvest user exists
   become_user: ckan
-  become: yes
-  shell: |
+  become: true
+  ansible.builtin.shell: |
     . /usr/lib/ckan/default/bin/activate
     cd /usr/lib/ckan/default/src/ckan
-    paster --plugin=ckan user list -c /etc/ckan/default/{{ ilab_catalog_environment }}.ini
+    ckan --config /etc/ckan/default/ckan.ini user list
     exit
-  changed_when: False
+  changed_when: false
   register: ckan_harvest_user
-  
+
 
 - name: Add CKAN harvest user
   become_user: root
-  become: yes
-  shell: |
+  become: true
+  ansible.builtin.shell: |
     . /usr/lib/ckan/default/bin/activate
     cd /usr/lib/ckan/default/src/ckan
-    paster user add harvest password="{{ ckan_harvest_password }}" email=harvest@localhost name=harvest -c /etc/ckan/default/{{ ilab_catalog_environment }}.ini
-    paster sysadmin add harvest -c /etc/ckan/default/{{ ilab_catalog_environment }}.ini
+    ckan --config /etc/ckan/default/ckan.ini user add harvest password="{{ ckan_harvest_password }}" email=harvest@localhost name=harvest
+    ckan --config /etc/ckan/default/ckan.ini sysadmin add harvest
     exit
   when: ('"name=harvest" not in ckan_admin_user.stdout') and not ansible_check_mode
 
 
-- name: Ensure WSGI specification for CKAN is present
-  template:
-    src: "apache.wsgi.j2"
-    dest: "/etc/ckan/default/apache.wsgi"
-  notify: Restart Apache webserver
+- name: Install CKAN UWSGI configuration file
+  ansible.builtin.copy:
+    src: ckan-uwsgi.ini
+    dest: /etc/ckan/default/ckan-uwsgi.ini
+    mode: 0644
 
 
-- name: Ensure I-lab Catalog virtual host config for Apache is present
-  template:
-    src: "ilab-catalog-vhost.conf.j2"
-    dest: "/etc/httpd/conf.d/ilab-catalog-vhost.conf"
-  notify: Restart Apache webserver
+- name: Install UWSGI configuration file
+  ansible.builtin.copy:
+    src: ckan-uwsgi.conf
+    dest: /etc/supervisord.d/ckan-uwsgi.ini
+    mode: 0644
+  register: supervisor_uwsgi
 
 
-- name: Ensure I-lab Catalog CKAN custom translation is present
+# Work around ordering issue with handlers by executing
+# from a task.
+- name: Process UWSGI configuration file
+  # noqa command-instead-of-module
+  ansible.builtin.command:
+    cmd: supervisorctl reload
+  when: supervisor_uwsgi.changed
+
+
+- name: Ensure WSGI script file is installed
+  ansible.builtin.copy:
+    src: "/usr/lib/ckan/default/src/ckan/wsgi.py"
+    dest: "/etc/ckan/default/wsgi.py"
+    mode: 0644
+    remote_src: true
+  notify: Supervisor restart all
+
+
+- name: Ensure Yoda Catalog virtual host config for Nginx is present
+  ansible.builtin.template:
+    src: "ckan-nginx.conf.j2"
+    dest: "/etc/nginx/nginx.conf"
+  notify: Restart Nginx
+
+
+- name: Ensure Yoda Catalog CKAN custom translation is present
   become_user: ckan
-  copy:
+  ansible.builtin.copy:
     src: '{{ item.src }}'
     dest: '{{ item.dest }}'
     mode: 0644
@@ -337,9 +559,4 @@
     - src: 'ckan.mo'
       dest: '/usr/lib/ckan/default/src/ckan/ckan/i18n/en_GB/LC_MESSAGES/ckan.mo'
   register: custom_translation
-  notify: Restart Apache webserver
-
-
-- name: Workaround translation problem
-  command: cp /usr/lib/ckan/default/src/ckan/ckan/public/base/i18n/en_AU.js /usr/lib/ckan/default/src/ckan/ckan/public/base/i18n/en_GB.js
-  when: custom_translation is changed
+  notify: Supervisor restart all

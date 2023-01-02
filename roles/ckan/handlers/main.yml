@@ -1,0 +1,20 @@
+---
+# copyright Utrecht University
+
+- name: Restart Supervisorctl
+  ansible.builtin.service:
+    name: supervisorctl
+    state: restarted
+
+
+# Using command rather than Supervisorctl, because it has no reload option
+- name: Reload Supervisorctl
+  # noqa command-instead-of-module
+  ansible.builtin.command:
+    cmd: supervisorctl reload
+
+
+- name: Supervisor restart all
+  community.general.supervisorctl:
+    name: all
+    state: restarted

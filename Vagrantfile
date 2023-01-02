@@ -6,7 +6,7 @@
 # Configuration variables.
 VAGRANTFILE_API_VERSION = "2"
 
-BOX = 'centos/7'
+BOX = 'bento/centos-7'
 GUI = false
 CPU = 2
 RAM = 2048

@@ -1,26 +1,28 @@
 ---
 # copyright Utrecht University
-# This playbook deploys a complete I-lab Catalog CKAN instance.
+# This playbook deploys a complete Yoda Catalog CKAN instance.
 
-- hosts: localhost
-  gather_facts: False
+- name: Check Ansible version
+  hosts: localhost
+  gather_facts: false
   pre_tasks:
     - name: Verify Ansible version meets requirements
-      assert:
-        that: "ansible_version.full is version('2.7', '>=')"
+      ansible.builtin.assert:
+        that: "ansible_version.full is version('2.8', '>=')"
         msg: >
-          "You must update Ansible to at least 2.7 to deploy I-lab Catalog CKAN."
+          "You must update Ansible to at least 2.8 to deploy Yoda Catalog CKAN."
 
 
-- name: Provision I-lab Catalog CKAN server
+- name: Provision Yoda Catalog CKAN server
   hosts: all
-  become: yes
+  become: true
   roles:
     - common
     - certificates
     - apache
+    - nginx
     - postgresql
     - solr
     - redis
     - ckan
-    - ckan-harvester
+    - ckan_harvester

@@ -1,7 +1,7 @@
 ---
 # copyright Utrecht University
 
-- name: Restart PostgreSQL
+- name: Restart Nginx
   ansible.builtin.service:
-    name: postgresql-11
+    name: nginx
     state: restarted
