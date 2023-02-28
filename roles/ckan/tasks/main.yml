@@ -440,7 +440,7 @@
   become: true
   become_user: postgres
   ansible.builtin.command:
-    cmd: "psql -d ckan_default -U postgres -c \"SELECT * FROM information_schema.tables where table_name = 'user';\""
+    cmd: "/usr/pgsql-11/bin/psql -d ckan_default -U postgres -c \"SELECT * FROM information_schema.tables where table_name = 'user';\""
   register: database_initialized
   changed_when: false
 
