@@ -19,8 +19,6 @@
     - xalan-j2
     - unzip
     - policycoreutils-python
-    - mod_wsgi
-    - httpd
     - centos-release-scl-rh
     - supervisor
 
