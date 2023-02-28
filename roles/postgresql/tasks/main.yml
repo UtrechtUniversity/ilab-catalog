@@ -47,7 +47,7 @@
 - name: Ensure default PostgreSQL version has been removed
   ansible.builtin.package:
     name: '{{ item }}'
-    state: present
+    state: absent
   with_items:
     - postgresql
     - postgresql-server
