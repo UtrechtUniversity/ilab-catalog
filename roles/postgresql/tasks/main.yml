@@ -144,6 +144,11 @@
       value: "'AES128+EECDH:AES128+EDH'"
   notify: Restart PostgreSQL
 
+# Flush handlers in PostgreSQL role in order to prevent PostgreSQL
+# restarts after the role is finished, since this can cause failures
+# in components that depend on PostgreSQL
+- name: Flush handlers from postgresql role
+  meta: flush_handlers
 
 - name: Ensure PostgreSQL is enabled and started
   ansible.builtin.service:
