@@ -117,7 +117,7 @@
 - name: Ensure PostgreSQL has access to PKI files
   ansible.builtin.file:
     path: '{{ item }}'
-    mode: 0600
+    mode: '0600'
     group: 'postgres'
     owner: 'postgres'
     state: file
@@ -132,7 +132,7 @@
     section: null
     option: '{{ item.option }}'
     value: '{{ item.value }}'
-    mode: 0600
+    mode: '0600'
   with_items:
     - option: ssl
       value: "on"
@@ -148,7 +148,7 @@
 # restarts after the role is finished, since this can cause failures
 # in components that depend on PostgreSQL
 - name: Flush handlers from postgresql role
-  meta: flush_handlers
+  ansible.builtin.meta: flush_handlers
 
 - name: Ensure PostgreSQL is enabled and started
   ansible.builtin.service:
