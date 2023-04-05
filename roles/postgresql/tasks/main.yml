@@ -23,25 +23,50 @@
   ansible.builtin.yum_repository:
     name: postgres
     description: PostgreSQL Yum repository
-    baseurl: https://yum.postgresql.org/11/redhat/rhel-7-x86_64
+    baseurl: "https://yum.postgresql.org/11/redhat/rhel-{{ ansible_distribution_major_version }}-x86_64"
 
 
-- name: Import SCLO repository key
+- name: Import SCLO repository key (EL 7)
   ansible.builtin.rpm_key:
     state: present
     key: http://mirror.centos.org/centos/RPM-GPG-KEY-CentOS-7
+  when: ansible_distribution_major_version == "7"
 
 
-- name: Add SCL-RH repository for LLVM
+- name: Add SCL-RH repository for LLVM (EL 7)
   ansible.builtin.package:
     name: centos-release-scl-rh
     state: present
+  when: ansible_distribution_major_version == "7"
 
 
-- name: Install LLVM toolset dependency from SCLO-RH for Postgresql11-devel package
+- name: Install LLVM toolset dependency from SCLO-RH for Postgresql11-devel package (EL 7)
   ansible.builtin.yum:
     name: llvm-toolset-7-clang
     enablerepo: centos-sclo-rh
+  when: ansible_distribution_major_version == "7"
+
+
+- name: Install Perl IPC::Run dependency for LLVM toolset (EL 8)
+  ansible.builtin.yum:
+    name: perl-IPC-Run
+    enablerepo: powertools
+  when: ansible_distribution_major_version == "8"
+
+
+- name: Install dependencies for PostgreSQL-devel (EL 8)
+  ansible.builtin.yum:
+    name:
+      - clang-devel
+      - llvm-devel
+    enablerepo: appstream
+  when: ansible_distribution_major_version == "8"
+
+
+- name: Install LLVM toolset (EL 8)
+  ansible.builtin.yum:
+    name: llvm-toolset
+  when: ansible_distribution_major_version == "8"
 
 
 - name: Ensure default PostgreSQL version has been removed
@@ -56,7 +81,7 @@
 
 # CKAN 2.9 requires PostgreSQL 9.5+, so we can't use the 9.2 version
 # that's bundled with CentOS.
-- name: Ensure PostgreSQL database is installed
+- name: Ensure PostgreSQL database is installed (EL 7)
   ansible.builtin.package:
     name: '{{ item }}'
     state: present
@@ -64,12 +89,34 @@
     - postgresql11-server
     - postgresql11-contrib
     - postgresql11-devel
+  when: ansible_distribution_major_version == "7"
 
 
-- name: Ensure dependencies for Ansible PostgreSQL module are installed
+- name: Ensure PostgreSQL database is installed (EL 8)
+  ansible.builtin.yum:
+    name: '{{ item }}'
+    state: present
+    enablerepo: postgres
+    disablerepo: appstream
+  with_items:
+    - postgresql11-server
+    - postgresql11-contrib
+    - postgresql11-devel
+  when: ansible_distribution_major_version == "8"
+
+
+- name: Ensure dependencies for Ansible PostgreSQL module are installed (EL 7)
   ansible.builtin.package:
     name: python-psycopg2,python3-psycopg2
     state: present
+  when: ansible_distribution_major_version == "7"
+
+
+- name: Ensure dependencies for Ansible PostgreSQL module are installed (EL 8)
+  ansible.builtin.package:
+    name: python3-psycopg2
+    state: present
+  when: ansible_distribution_major_version == "8"
 
 
 - name: Initialize PostgreSQL database
