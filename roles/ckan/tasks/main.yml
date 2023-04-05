@@ -185,7 +185,7 @@
     dest: "/usr/lib/ckan/default/src/ckan_orig"
     version: "ckan-{{ ckan_version }}"
     update: true
-  notify: Supervisor restart all
+  notify: Supervisor reload and restart all
 
 
 - name: Copy CKAN code for local modifications
@@ -262,7 +262,7 @@
   ansible.builtin.template:
     src: "configuration.ini.j2"
     dest: "/etc/ckan/default/ckan.ini"
-  notify: Supervisor restart all
+  notify: Supervisor reload and restart all
 
 
 - name: Create CKAN Solr config directory
@@ -346,7 +346,7 @@
   ansible.builtin.pip:
     name: git+https://github.com/ckan/ckanext-harvest.git@{{ ckanext_harvest_version }}#egg=ckanext-harvest
     executable: /usr/lib/ckan/default/bin/pip3
-  notify: Supervisor restart all
+  notify: Supervisor reload and restart all
 
 
 - name: Download CKAN harvest extension code
@@ -357,7 +357,7 @@
     dest: "/usr/lib/ckan/default/src/ckanext-harvest-orig/"
     version: "{{ ckanext_harvest_version }}"
     update: true
-  notify: Supervisor restart all
+  notify: Supervisor reload and restart all
 
 
 - name: Copy CKAN harvest extension code for local modifications
@@ -365,7 +365,7 @@
     src: "/usr/lib/ckan/default/src/ckanext-harvest-orig/"
     dest: "/usr/lib/ckan/default/src/ckanext-harvest"
   delegate_to: "{{ inventory_hostname }}"
-  notify: Supervisor restart all
+  notify: Supervisor reload and restart all
 
 
 # Backport https://github.com/ckan/ckanext-harvest/commit/98edcd3ad7e3f6208797df90b7a4ebe76b1104d6
@@ -385,7 +385,7 @@
   ansible.builtin.pip:
     requirements: /usr/lib/ckan/default/src/ckanext-harvest/pip-requirements.txt
     executable: /usr/lib/ckan/default/bin/pip3
-  notify: Supervisor restart all
+  notify: Supervisor reload and restart all
 
 
 - name: Install CKAN OAI-PMH extension
@@ -394,7 +394,7 @@
   ansible.builtin.pip:
     name: git+https://github.com/UtrechtUniversity/ckanext-oaipmh.git@{{ ckanext_oaipmh_version }}#egg=ckanext-oaipmh
     executable: /usr/lib/ckan/default/bin/pip3
-  notify: Supervisor restart all
+  notify: Supervisor reload and restart all
 
 
 - name: Download CKAN OAI-PMH extension code
@@ -405,7 +405,7 @@
     dest: "/usr/lib/ckan/default/src/ckanext-oaipmh"
     version: "{{ ckanext_oaipmh_version }}"
     update: true
-  notify: Supervisor restart all
+  notify: Supervisor reload and restart all
 
 
 - name: Install CKAN OAI-PMH extension dependencies
@@ -414,7 +414,7 @@
   ansible.builtin.pip:
     requirements: /usr/lib/ckan/default/src/ckanext-oaipmh/requirements.txt
     executable: /usr/lib/ckan/default/bin/pip3
-  notify: Supervisor restart all
+  notify: Supervisor reload and restart all
 
 
 - name: Download custom CKAN theme
@@ -433,7 +433,7 @@
   ansible.builtin.pip:
     name: git+https://github.com/UtrechtUniversity/ilab-catalog-theme.git@{{ ckanext_custom_theme_version }}#egg=ckanext-custom_theme
     executable: /usr/lib/ckan/default/bin/pip3
-  notify: Supervisor restart all
+  notify: Supervisor reload and restart all
 
 
 - name: Check if CKAN database has been initialized
@@ -535,7 +535,7 @@
     dest: "/etc/ckan/default/wsgi.py"
     mode: 0644
     remote_src: true
-  notify: Supervisor restart all
+  notify: Supervisor reload and restart all
 
 
 - name: Ensure Yoda Catalog virtual host config for Nginx is present
@@ -557,4 +557,4 @@
     - src: 'ckan.mo'
       dest: '/usr/lib/ckan/default/src/ckan/ckan/i18n/en_GB/LC_MESSAGES/ckan.mo'
   register: custom_translation
-  notify: Supervisor restart all
+  notify: Supervisor reload and restart all
