@@ -23,6 +23,9 @@
     dest: "~/solr-{{ solr_version }}.tgz"
     checksum: "{{ solr_checksum }}"
     force: false
+    owner: root
+    group: root
+    mode: "0644"
   when: solr_installed.stat.isdir is not defined
   register: solr_downloaded
 
@@ -69,12 +72,15 @@
   ansible.builtin.template:
     src: "solrconfig.xml.j2"
     dest: "/var/solr/data/ckan/conf/solrconfig.xml"
+    owner: solr
+    group: solr
+    mode: "0660"
 
 
 # Solr might be started outside of systemd. Stop it with command to workaround
 # service limitations, so it can be restarted via systemd.
 - name: Ensure Solr is stopped
-  # noqa command-instead-of-module no-handler
+  # noqa command-instead-of-module no-handler no-changed-when
   ansible.builtin.command: service solr stop
   when: solr_installed.changed
 
@@ -85,7 +91,7 @@
     dest: "/etc/systemd/system/solr.service"
     owner: root
     group: root
-    mode: 0644
+    mode: "0644"
 
 
 - name: Ensure Solr deamon is started using systemd

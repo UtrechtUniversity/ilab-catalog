@@ -2,8 +2,8 @@
 # copyright Utrecht University
 
 dependencies:
-  - common
-  - certificates
-  - apache
-  - solr
-  - redis
+  - role: common
+  - role: certificates
+  - role: apache
+  - role: solr
+  - role: redis

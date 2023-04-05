@@ -109,7 +109,7 @@
   ansible.builtin.file:
     path: "{{ item }}"
     state: directory
-    mode: 0755
+    mode: '0755'
     owner: ckan
   with_items:
     - /usr/lib/ckan
@@ -231,6 +231,7 @@
 
 
 - name: Generate session secret
+  # noqa no-changed-when
   ansible.builtin.shell: openssl rand -base64 32 > /etc/ckan/default/session_secret
   args:
     creates: /etc/ckan/default/session_secret
@@ -262,6 +263,9 @@
   ansible.builtin.template:
     src: "configuration.ini.j2"
     dest: "/etc/ckan/default/ckan.ini"
+    owner: root
+    group: root
+    mode: "0644"
   notify: Supervisor reload and restart all
 
 
@@ -271,7 +275,7 @@
     state: directory
     owner: solr
     group: solr
-    mode: 0755
+    mode: '0755'
 
 
 - name: Install CKAN Solr schema
@@ -282,7 +286,7 @@
     dest: /var/solr/data/ckan/schema.xml
     owner: solr
     group: solr
-    mode: 0644
+    mode: '0644'
     remote_src: true
   register: solr_copy_schema
 
@@ -293,7 +297,7 @@
     dest: /var/solr/data/ckan/conf/elevate.xml
     owner: solr
     group: solr
-    mode: 0644
+    mode: '0644'
     remote_src: true
   register: solr_init_queryelevation
 
@@ -446,6 +450,7 @@
 
 
 - name: Initialize CKAN database
+  # noqa no-changed-when
   become_user: ckan
   become: true
   ansible.builtin.shell: |
@@ -470,6 +475,7 @@
 
 
 - name: Add CKAN admin user
+  # noqa no-changed-when
   become_user: ckan
   become: true
   ansible.builtin.shell: |
@@ -494,6 +500,7 @@
 
 
 - name: Add CKAN harvest user
+  # noqa no-changed-when
   become_user: root
   become: true
   ansible.builtin.shell: |
@@ -509,21 +516,21 @@
   ansible.builtin.copy:
     src: ckan-uwsgi.ini
     dest: /etc/ckan/default/ckan-uwsgi.ini
-    mode: 0644
+    mode: '0644'
 
 
 - name: Install UWSGI configuration file
   ansible.builtin.copy:
     src: ckan-uwsgi.conf
     dest: /etc/supervisord.d/ckan-uwsgi.ini
-    mode: 0644
+    mode: '0644'
   register: supervisor_uwsgi
 
 
 # Work around ordering issue with handlers by executing
 # from a task.
 - name: Process UWSGI configuration file
-  # noqa command-instead-of-module
+  # noqa command-instead-of-module no-changed-when
   ansible.builtin.command:
     cmd: supervisorctl reload
   when: supervisor_uwsgi.changed
@@ -533,7 +540,7 @@
   ansible.builtin.copy:
     src: "/usr/lib/ckan/default/src/ckan/wsgi.py"
     dest: "/etc/ckan/default/wsgi.py"
-    mode: 0644
+    mode: "0644"
     remote_src: true
   notify: Supervisor reload and restart all
 
@@ -542,6 +549,9 @@
   ansible.builtin.template:
     src: "ckan-nginx.conf.j2"
     dest: "/etc/nginx/nginx.conf"
+    mode: "0644"
+    owner: root
+    group: root
   notify: Restart Nginx
 
 
@@ -550,7 +560,7 @@
   ansible.builtin.copy:
     src: '{{ item.src }}'
     dest: '{{ item.dest }}'
-    mode: 0644
+    mode: '0644'
   with_items:
     - src: 'ckan.po'
       dest: '/usr/lib/ckan/default/src/ckan/ckan/i18n/en_GB/LC_MESSAGES/ckan.po'

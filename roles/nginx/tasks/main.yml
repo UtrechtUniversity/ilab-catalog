@@ -22,7 +22,7 @@
     state: directory
     owner: nginx
     group: nginx
-    mode: 0770
+    mode: "0770"
 
 
 - name: Ensure nginx service is enabled

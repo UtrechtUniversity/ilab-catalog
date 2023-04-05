@@ -100,7 +100,7 @@
     dest: '{{ openssl_certs_dir }}/{{ openssl_crt_signed_and_chain }}'
     owner: root
     group: root
-    mode: 0644
+    mode: '0644'
   when: cert_mode == "static"
 
 
@@ -110,7 +110,7 @@
     content: '{{ static_cert_crt }}'
     owner: root
     group: root
-    mode: 0644
+    mode: '0644'
   when: cert_mode == "static"
 
 
@@ -120,7 +120,7 @@
     content: '{{ static_cert_chain }}'
     owner: root
     group: root
-    mode: 0644
+    mode: '0644'
   when: cert_mode == "static"
 
 
@@ -135,7 +135,7 @@
 - name: Ensure certificate files have correct permissions
   ansible.builtin.file:
     path: '{{ item }}'
-    mode: 0644
+    mode: '0644'
     group: 'root'
     owner: 'root'
     state: file
@@ -149,7 +149,7 @@
 - name: Ensure certificate files have correct permissions
   ansible.builtin.file:
     path: '{{ item }}'
-    mode: 0644
+    mode: '0644'
     group: 'root'
     owner: 'root'
     state: file
