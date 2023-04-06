@@ -16,11 +16,19 @@
   notify: Restart Zabbix agent
 
 
-- name: Install Zabbix PostgreSQL monitoring from downloaded RPM
+- name: Install Zabbix PostgreSQL monitoring from downloaded RPM (EL7)
   ansible.builtin.package:
     name: '{{ rpm_dest_dir }}/{{ zabbix_postgres.filename }}'
     state: present
-  when: not zabbix_postgres_repo.results and not repo_only
+  when: not zabbix_postgres_repo.results and not repo_only and ansible_distribution_major_version == "7"
+
+
+- name: Install Zabbix PostgreSQL monitoring from downloaded RPM (EL8)
+  ansible.builtin.yum:
+    name: '{{ rpm_dest_dir }}/{{ zabbix_postgres.filename }}'
+    state: present
+    disable_gpg_check: true
+  when: not zabbix_postgres_repo.results and not repo_only and ansible_distribution_major_version == "8"
 
 
 - name: Ensure Zabbix PostgreSQL monitoring RPM is installed

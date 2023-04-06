@@ -1,6 +1,29 @@
 ---
 # copyright Utrecht University
 
+
+- name: Set zabbix agent package data (EL7)
+  ansible.builtin.set_fact:
+    zabbix_agent: "{{ zabbix_agent_el7 }}"
+  when: ansible_distribution_major_version == "7"
+
+
+- name: Set zabbix agent package data (EL8)
+  ansible.builtin.set_fact:
+    zabbix_agent: "{{ zabbix_agent_el8 }}"
+  when: ansible_distribution_major_version == "8"
+
+
+- name: Install Zabbix repository RPM keys
+  ansible.builtin.rpm_key:
+    key: "{{ item }}"
+    state: present
+  with_items:
+    - https://repo.zabbix.com/RPM-GPG-KEY-ZABBIX-08EFA7DD
+    - https://repo.zabbix.com/RPM-GPG-KEY-ZABBIX-A14FE591
+    - https://repo.zabbix.com/RPM-GPG-KEY-ZABBIX
+
+
 - name: Check if Zabbix agent is installable from repository
   ansible.builtin.yum:
     list: '{{ zabbix_agent.package }}'
