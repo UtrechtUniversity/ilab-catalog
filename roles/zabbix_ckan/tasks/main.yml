@@ -2,30 +2,30 @@
 # copyright Utrecht University
 
 - name: Ensure Zabbix scripts are present
-  copy:
+  ansible.builtin.copy:
     src: '{{ item }}'
     dest: '/etc/zabbix/zabbix_agentd.d/{{ item }}'
     owner: zabbix
     group: zabbix
-    mode: 0500
+    mode: "0500"
   with_items:
     - 'dailyFetchLogErrors.sh'
     - 'dailyGatherLogErrors.sh'
 
 
 - name: Ensure Zabbix user parameters configuration is present
-  copy:
+  ansible.builtin.copy:
     src: 'zabbix_agentd.userparams.conf'
     dest: '/etc/zabbix/zabbix_agentd.d/zabbix_agentd.userparams.conf'
     owner: zabbix
     group: zabbix
-    mode: 0400
+    mode: "0400"
 
 
 - name: Ensure Zabbix sudoers file is present
-  copy:
+  ansible.builtin.copy:
     src: 'ckan-zabbix-sudoers'
     dest: '/etc/sudoers.d/ckan-zabbix-sudoers'
     owner: root
     group: root
-    mode: 0440
+    mode: "0440"

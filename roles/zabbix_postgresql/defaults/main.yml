@@ -20,4 +20,4 @@ ckan_database_name: ckan_default
 
 zabbix_server: 192.168.50.20
 
-repo_only: no  # Only download packages from repos.
+repo_only: false  # Only download packages from repos.

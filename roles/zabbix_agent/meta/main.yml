@@ -2,4 +2,4 @@
 # copyright Utrecht University
 
 dependencies:
-- common
+  - role: common
