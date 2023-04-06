@@ -8,7 +8,10 @@
 * [Vagrant](https://www.vagrantup.com/docs/installation/) (>= 1.9)
 
 ### Managed node requirements
-* [CentOS](https://www.centos.org/) (>= 7.3)
+
+The catalog can be deployed on either [CentOS 7](https://www.centos.org/) (>= 7.3),
+or on [RHEL 8](https://www.redhat.com/en/technologies/linux-platforms/enterprise-linux) /
+[Alma Linux 8](https://almalinux.org/).
 
 ## Deploying Yoda Catalog development instance
 
