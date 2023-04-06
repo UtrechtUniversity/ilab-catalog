@@ -20,6 +20,7 @@
   with_items:
     - policycoreutils-python-utils
     - python3-libselinux
+    - rsync
   when: ansible_distribution_major_version == "8"
 
 
