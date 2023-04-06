@@ -6,7 +6,8 @@
 # Configuration variables.
 VAGRANTFILE_API_VERSION = "2"
 
-BOX = 'bento/centos-7'
+# Set BOX to bento/centos-7 for CentOS 7, or to almalinux/8 for Alma Linux 8
+BOX = 'almalinux/8'
 GUI = false
 CPU = 2
 RAM = 2048
