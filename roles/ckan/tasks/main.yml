@@ -373,12 +373,13 @@
 
 # Need to re-initialize setuptools after CKAN install, because
 # otherwise harvesting plugin and UWSGI installation will fail due to
-# setuptools data being incompatible
+# several other setuptools bugs and compatibility issues, including
+# https://github.com/pypa/setuptools/issues/3743
 - name: Install setuptools for CKAN harvesting plugin
   become: true
   become_user: ckan
   ansible.builtin.pip:
-    name: setuptools==44.1.0
+    name: setuptools==67.1.0
     extra_args: "-U"
     executable: /usr/lib/ckan/default/bin/pip3
 
