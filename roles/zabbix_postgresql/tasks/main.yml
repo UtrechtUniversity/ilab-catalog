@@ -1,6 +1,10 @@
 ---
 # copyright Utrecht University
 
+- name: Include distribution version specific variables for Zabbix
+  ansible.builtin.include_vars: "rh{{ ansible_distribution_major_version }}.yml"
+
+
 - name: Check if Zabbix PostgreSQL monitoring RPM is installable from repository
   ansible.builtin.yum:
     list: '{{ zabbix_postgres.package }}'
