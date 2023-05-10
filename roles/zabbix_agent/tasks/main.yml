@@ -2,16 +2,8 @@
 # copyright Utrecht University
 
 
-- name: Set zabbix agent package data (EL7)
-  ansible.builtin.set_fact:
-    zabbix_agent: "{{ zabbix_agent_el7 }}"
-  when: ansible_distribution_major_version == "7"
-
-
-- name: Set zabbix agent package data (EL8)
-  ansible.builtin.set_fact:
-    zabbix_agent: "{{ zabbix_agent_el8 }}"
-  when: ansible_distribution_major_version == "8"
+- name: Include distribution version specific variables for Zabbix
+  ansible.builtin.include_vars: "rh{{ ansible_distribution_major_version }}.yml"
 
 
 - name: Install Zabbix repository RPM keys
