@@ -11,6 +11,26 @@
     - unzip
     - lsof
 
+- name: Upload custom SELinux module for Solr on EL8
+  ansible.builtin.copy:
+    src: ckan-solr.pp
+    dest: /root/ckan-solr.pp
+    owner: root
+    group: root
+    mode: "0644"
+  register: ckan_solr_selinux
+  when: ansible_distribution_major_version == "8"
+
+
+# Running as task instead of handler in order to prevent ordering issues
+# with Solr rhandler.
+- name: Apply SELinux policy module for Solr
+  ansible.builtin.command:
+    cmd: semodule -i /root/ckan-solr.pp
+  changed_when: false
+  when: ansible_distribution_major_version == "8" and ckan_solr_selinux.changed
+
+
 - name: Check if Solr is installed
   ansible.builtin.stat:
     path: /opt/solr
