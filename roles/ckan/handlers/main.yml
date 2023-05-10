@@ -13,5 +13,5 @@
 # supervisorctl not being finished with reloading when the restart command is issued.
 # See also https://github.com/Supervisor/supervisor/issues/48
 - name: Supervisor reload and restart all
-  # noqa command-instead-of-module
+  # noqa command-instead-of-module no-changed-when
   ansible.builtin.shell: supervisorctl reload && sleep 3 && supervisorctl restart all
