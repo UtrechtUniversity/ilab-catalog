@@ -7,7 +7,6 @@
     state: present
   with_items:
     - xml-commons
-    - postgresql11-contrib
     - libxslt
     - libxslt-devel
     - libxml2
@@ -29,7 +28,6 @@
     name: '{{ item }}'
     state: present
   with_items:
-    - postgresql11-contrib
     - libxslt
     - libxslt-devel
     - libxml2
@@ -490,11 +488,24 @@
   notify: Supervisor reload and restart all
 
 
+# Needed because of change in default permissions public schema as of PostgreSQL 15
+- name: Specifically grant iRODS database user access on public schema
+  become_user: postgres
+  become: true
+  community.postgresql.postgresql_privs:
+    database: ckan_default
+    roles: ckan_default
+    objs: public
+    privs: CREATE
+    type: schema
+  when: postgresql_version >= 15
+
+
 - name: Check if CKAN database has been initialized
   become: true
   become_user: postgres
   ansible.builtin.command:
-    cmd: "/usr/pgsql-11/bin/psql -d ckan_default -U postgres -c \"SELECT * FROM information_schema.tables where table_name = 'user';\""
+    cmd: "/usr/pgsql-{{ postgresql_version }}/bin/psql -d ckan_default -U postgres -c \"SELECT * FROM information_schema.tables where table_name = 'user';\""
   register: database_initialized
   changed_when: false
 

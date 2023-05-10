@@ -3,5 +3,5 @@
 
 - name: Restart PostgreSQL
   ansible.builtin.service:
-    name: postgresql-11
+    name: "postgresql-{{ postgresql_version }}"
     state: restarted
