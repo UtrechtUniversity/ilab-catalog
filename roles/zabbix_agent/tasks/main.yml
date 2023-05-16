@@ -1,6 +1,21 @@
 ---
 # copyright Utrecht University
 
+
+- name: Include distribution version specific variables for Zabbix
+  ansible.builtin.include_vars: "rh{{ ansible_distribution_major_version }}.yml"
+
+
+- name: Install Zabbix repository RPM keys
+  ansible.builtin.rpm_key:
+    key: "{{ item }}"
+    state: present
+  with_items:
+    - https://repo.zabbix.com/RPM-GPG-KEY-ZABBIX-08EFA7DD
+    - https://repo.zabbix.com/RPM-GPG-KEY-ZABBIX-A14FE591
+    - https://repo.zabbix.com/RPM-GPG-KEY-ZABBIX
+
+
 - name: Check if Zabbix agent is installable from repository
   ansible.builtin.yum:
     list: '{{ zabbix_agent.package }}'
@@ -12,6 +27,9 @@
     url: '{{ zabbix_agent.url }}/{{ zabbix_agent.filename }}'
     dest: '{{ rpm_dest_dir }}/{{ zabbix_agent.filename }}'
     checksum: '{{ zabbix_agent.checksum }}'
+    owner: root
+    group: root
+    mode: "0644"
   when: not zabbix_agent_repo.results and not repo_only
 
 
@@ -54,7 +72,7 @@
     path: /etc/zabbix/zabbix_agentd.psk
     owner: zabbix
     group: zabbix
-    mode: 0600
+    mode: "0600"
 
 
 - name: Configure Zabbix agent
@@ -63,5 +81,5 @@
     dest: /etc/zabbix/zabbix_agentd.conf
     owner: zabbix
     group: zabbix
-    mode: 0600
+    mode: "0600"
   notify: Restart Zabbix agent

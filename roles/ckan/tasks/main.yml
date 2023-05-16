@@ -1,13 +1,12 @@
 ---
 # copyright Utrecht University
 
-- name: Ensure CKAN prerequisites are installed
+- name: Ensure CKAN prerequisites are installed (EL7)
   ansible.builtin.package:
     name: '{{ item }}'
     state: present
   with_items:
     - xml-commons
-    - postgresql11-contrib
     - libxslt
     - libxslt-devel
     - libxml2
@@ -21,6 +20,26 @@
     - policycoreutils-python
     - centos-release-scl-rh
     - supervisor
+  when: ansible_distribution_major_version == "7"
+
+
+- name: Ensure CKAN prerequisites are installed (EL8)
+  ansible.builtin.package:
+    name: '{{ item }}'
+    state: present
+  with_items:
+    - libxslt
+    - libxslt-devel
+    - libxml2
+    - libxml2-devel
+    - python3-virtualenv
+    - gcc
+    - gcc-c++
+    - make
+    - unzip
+    - policycoreutils-python-utils
+    - supervisor
+  when: ansible_distribution_major_version == "8"
 
 
 - name: Ensure supervisord is running
@@ -31,10 +50,19 @@
 
 # CKAN 2.9.x requires Python 3.7+ (documentation says 3.6, but this is wrong). Since only Python 3.6 is
 # packaged with CentOS 7, so we need to fetch it from SCLO-RH
-- name: Install Python 3.8
+- name: Install Python 3.8 (EL 7)
   ansible.builtin.yum:
     name: rh-python38-python,rh-python38-python-devel,rh-python38-python-libs
     enablerepo: centos-sclo-rh
+  when: ansible_distribution_major_version == "7"
+
+
+# CKAN 2.9.x requires Python 3.7+ (documentation says 3.6, but this is wrong). Since only Python 3.6 is
+# packaged with CentOS 7, so we need to fetch it from SCLO-RH
+- name: Install Python 3.8 (EL 8)
+  ansible.builtin.yum:
+    name: python38,python38-devel,python38-libs
+  when: ansible_distribution_major_version == "8"
 
 
 - name: Ensure a 'wheel' group exists
@@ -117,10 +145,29 @@
     - /etc/ckan/default
 
 
+- name: Set Python facts (EL7)
+  ansible.builtin.set_fact:
+    python38_binary: /opt/rh/rh-python38/root/bin/python3
+    python38_include: /opt/rh/rh-python38/root/usr/include/python3.8
+  when: ansible_distribution_major_version == "7"
+
+
+- name: Set Python facts (EL8)
+  ansible.builtin.set_fact:
+    python38_binary: /usr/bin/python3.8
+    python38_include: /usr/include/python3.8
+  when: ansible_distribution_major_version == "8"
+
+
+- name: Print all available facts
+  ansible.builtin.debug:
+    var: ansible_facts
+
+
 - name: Create virtual environment for CKAN
   become: true
   become_user: ckan
-  ansible.builtin.command: virtualenv --python /opt/rh/rh-python38/root/bin/python3 --no-site-packages default
+  ansible.builtin.command: "virtualenv --python {{ python38_binary }} --no-site-packages default"
   args:
     chdir: /usr/lib/ckan
     creates: /usr/lib/ckan/default
@@ -227,7 +274,7 @@
     extra_args: "--ignore-installed"
     executable: /usr/lib/ckan/default/bin/pip3
   environment:
-    C_INCLUDE_PATH: /opt/rh/rh-python38/root/usr/include/python3.8
+    C_INCLUDE_PATH: "{{ python38_include }}"
 
 
 - name: Generate session secret
@@ -324,12 +371,13 @@
 
 # Need to re-initialize setuptools after CKAN install, because
 # otherwise harvesting plugin and UWSGI installation will fail due to
-# setuptools data being incompatible
+# several other setuptools bugs and compatibility issues, including
+# https://github.com/pypa/setuptools/issues/3743
 - name: Install setuptools for CKAN harvesting plugin
   become: true
   become_user: ckan
   ansible.builtin.pip:
-    name: setuptools==44.1.0
+    name: setuptools==67.1.0
     extra_args: "-U"
     executable: /usr/lib/ckan/default/bin/pip3
 
@@ -341,7 +389,7 @@
     name: uwsgi
     executable: /usr/lib/ckan/default/bin/pip3
   environment:
-    C_INCLUDE_PATH: /opt/rh/rh-python38/root/usr/include/python3.8
+    C_INCLUDE_PATH: "{{ python38_include }}"
 
 
 - name: Install CKAN harvest extension
@@ -440,11 +488,24 @@
   notify: Supervisor reload and restart all
 
 
+# Needed because of change in default permissions public schema as of PostgreSQL 15
+- name: Specifically grant iRODS database user access on public schema
+  become_user: postgres
+  become: true
+  community.postgresql.postgresql_privs:
+    database: ckan_default
+    roles: ckan_default
+    objs: public
+    privs: CREATE
+    type: schema
+  when: postgresql_version >= 15
+
+
 - name: Check if CKAN database has been initialized
   become: true
   become_user: postgres
   ansible.builtin.command:
-    cmd: "/usr/pgsql-11/bin/psql -d ckan_default -U postgres -c \"SELECT * FROM information_schema.tables where table_name = 'user';\""
+    cmd: "/usr/pgsql-{{ postgresql_version }}/bin/psql -d ckan_default -U postgres -c \"SELECT * FROM information_schema.tables where table_name = 'user';\""
   register: database_initialized
   changed_when: false
 

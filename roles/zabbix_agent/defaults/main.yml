@@ -1,0 +1,9 @@
+---
+# copyright Utrecht University
+
+# Temporary directory to store downloaded rpm files.
+rpm_dest_dir: /tmp
+
+zabbix_server: 192.168.50.20
+
+repo_only: false  # Only download packages from repos.

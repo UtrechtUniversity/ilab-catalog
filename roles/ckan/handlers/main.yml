@@ -8,10 +8,10 @@
 
 
 # Using command instead of supervisorctl module because of limitations in supervisorctl
-# module regarding ordering of operations and not having a reload operation.
+# module regarding ordering of operations and not having a reload operation. Need to sleep
+# between reload and restart, because immediate restart after reload can fail on RHEL8 due to
+# supervisorctl not being finished with reloading when the restart command is issued.
+# See also https://github.com/Supervisor/supervisor/issues/48
 - name: Supervisor reload and restart all
-  # noqa command-instead-of-module
-  ansible.builtin.command:
-    cmd: |
-      supervisorctl reload
-      supervisorctl restart all
+  # noqa command-instead-of-module no-changed-when
+  ansible.builtin.shell: supervisorctl reload && sleep 3 && supervisorctl restart all

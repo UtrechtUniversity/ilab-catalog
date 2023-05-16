@@ -21,5 +21,8 @@ ckan_db_lc_ctype: en_US.utf8
 
 # CKAN extension verions
 ckanext_harvest_version: v1.3.4
-ckanext_oaipmh_version: v1.0.0
-ckanext_custom_theme_version: v1.0.0
+ckanext_oaipmh_version: 'ckan-2.9-python3'
+ckanext_custom_theme_version: 'ckan-2.9-python3'  # Version November 2018
+
+# There is also a default value for PostgreSQL version in the PostgreSQL role
+postgresql_version: 15

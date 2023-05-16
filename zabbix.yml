@@ -2,11 +2,12 @@
 # copyright Utrecht University
 # This playbook provisions Yoda Catalog CKAN instance with the Zabbix agent, PostgreSQL monitoring and Zabbix user access to the database.
 
-- hosts: localhost
+- name: Check Ansible version
+  hosts: localhost
   gather_facts: false
   pre_tasks:
     - name: Verify Ansible version meets requirements
-      assert:
+      ansible.builtin.assert:
         that: "ansible_version.full is version('2.8', '>=')"
         msg: >
           "You must update Ansible to at least 2.8 to deploy Yoda Catalog CKAN."
@@ -16,7 +17,7 @@
   hosts: all
   become: true
   roles:
-    - zabbix-agent
-    - role: zabbix-postgresql
+    - zabbix_agent
+    - role: zabbix_postgresql
       zabbix_database_name: "{{ ckan_database_name }}"
-    - zabbix-ckan
+    - zabbix_ckan

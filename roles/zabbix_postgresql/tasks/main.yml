@@ -1,6 +1,10 @@
 ---
 # copyright Utrecht University
 
+- name: Include distribution version specific variables for Zabbix
+  ansible.builtin.include_vars: "rh{{ ansible_distribution_major_version }}.yml"
+
+
 - name: Check if Zabbix PostgreSQL monitoring RPM is installable from repository
   ansible.builtin.yum:
     list: '{{ zabbix_postgres.package }}'
@@ -12,15 +16,26 @@
     url: '{{ zabbix_postgres.url }}/{{ zabbix_postgres.filename }}'
     dest: '{{ rpm_dest_dir }}/{{ zabbix_postgres.filename }}'
     checksum: '{{ zabbix_postgres.checksum }}'
+    owner: root
+    group: root
+    mode: "0644"
   when: not zabbix_postgres_repo.results and not repo_only
   notify: Restart Zabbix agent
 
 
-- name: Install Zabbix PostgreSQL monitoring from downloaded RPM
+- name: Install Zabbix PostgreSQL monitoring from downloaded RPM (EL7)
   ansible.builtin.package:
     name: '{{ rpm_dest_dir }}/{{ zabbix_postgres.filename }}'
     state: present
-  when: not zabbix_postgres_repo.results and not repo_only
+  when: not zabbix_postgres_repo.results and not repo_only and ansible_distribution_major_version == "7"
+
+
+- name: Install Zabbix PostgreSQL monitoring from downloaded RPM (EL8)
+  ansible.builtin.yum:
+    name: '{{ rpm_dest_dir }}/{{ zabbix_postgres.filename }}'
+    state: present
+    disable_gpg_check: true
+  when: not zabbix_postgres_repo.results and not repo_only and ansible_distribution_major_version == "8"
 
 
 - name: Ensure Zabbix PostgreSQL monitoring RPM is installed

@@ -18,8 +18,14 @@ jobs:
       # Important: This sets up your GITHUB_WORKSPACE environment variable
       - uses: actions/checkout@v2
 
-      - name: Run ansible-lint
+      - name: Run ansible-lint on main playbook
         # replace `main` with any valid ref, or tags like `v6`
         uses: ansible-community/ansible-lint-action@main
         with:
           path: "playbook.yml"
+
+      - name: Run ansible-lint on Zabbix playbook
+        # replace `main` with any valid ref, or tags like `v6`
+        uses: ansible-community/ansible-lint-action@main
+        with:
+          path: "zabbix.yml"
