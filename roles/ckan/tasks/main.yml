@@ -573,6 +573,16 @@
   when: ('"name=harvest" not in ckan_admin_user.stdout') and not ansible_check_mode
 
 
+- name: Install CKAN UWSGI startup script
+  ansible.builtin.template:
+    src: "start-uwsgi.sh.j2"
+    dest: "/etc/ckan/start-uwsgi.sh"
+    owner: root
+    group: root
+    mode: "0755"
+  notify: Supervisor reload and restart all
+
+
 - name: Install CKAN UWSGI configuration file
   ansible.builtin.copy:
     src: ckan-uwsgi.ini
