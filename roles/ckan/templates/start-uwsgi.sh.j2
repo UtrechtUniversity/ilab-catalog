@@ -1,0 +1,18 @@
+#!/bin/bash
+
+echo "Waiting for PostgreSQL to be ready ..."
+while ! /usr/pgsql-{{  postgresql_version }}/bin/pg_isready
+do printf "."
+   sleep 1
+done
+echo "PostgreSQL is ready."
+
+echo "Waiting for Solr to be ready ..."
+while ! curl -s http://localhost:8983/solr/ > /dev/null
+do printf "."
+   sleep 1
+done
+echo "Solr is ready."
+
+echo "Starting UWSGI ..."
+exec /usr/lib/ckan/default/bin/uwsgi -i /etc/ckan/default/ckan-uwsgi.ini
