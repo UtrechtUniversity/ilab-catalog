@@ -43,3 +43,14 @@
   community.general.supervisorctl:
     name: ckan_fetch_consumer
     state: present
+
+
+- name: Configure harvester cronjob
+  become_user: ckan
+  become: true
+  ansible.builtin.cron:
+    name: ckan_harvester
+    minute: '*/2'
+    hour: '*'
+    day: '*'
+    job: /usr/lib/ckan/default/bin/ckan -c /etc/ckan/default/ckan.ini harvester run
