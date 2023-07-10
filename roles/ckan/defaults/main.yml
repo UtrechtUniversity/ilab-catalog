@@ -20,7 +20,7 @@ ckan_db_lc_collate: en_US.utf8
 ckan_db_lc_ctype: en_US.utf8
 
 # CKAN extension verions
-ckanext_harvest_version: v1.3.4
+ckanext_harvest_version: v1.5.6
 ckanext_oaipmh_version: 'ckan-2.9-python3'
 ckanext_custom_theme_version: 'ckan-2.9-python3'  # Version November 2018
 
