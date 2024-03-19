@@ -159,11 +159,6 @@
   when: ansible_distribution_major_version == "8"
 
 
-- name: Print all available facts
-  ansible.builtin.debug:
-    var: ansible_facts
-
-
 - name: Create virtual environment for CKAN
   become: true
   become_user: ckan
