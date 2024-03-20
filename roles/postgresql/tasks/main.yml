@@ -16,7 +16,7 @@
 - name: Add PostgreSQL package key
   # noqa command-instead-of-module no-changed-when
   ansible.builtin.command:
-    cmd: "rpm --import https://apt.postgresql.org/pub/repos/yum/RPM-GPG-KEY-PGDG-{{ postgresql_version }}"
+    cmd: "rpm --import https://download.postgresql.org/pub/repos/yum/keys/PGDG-RPM-GPG-KEY-RHEL"
 
 
 - name: Add PostgreSQL repository
