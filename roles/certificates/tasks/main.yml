@@ -29,6 +29,7 @@
     force: false
     state: present
   when: cert_mode == "selfsigned"
+  notify: Restart Nginx webserver
 
 
 - name: Upload private key of certificate
@@ -39,6 +40,7 @@
     group: root
     mode: '0600'
   when: cert_mode == "static"
+  notify: Restart Nginx webserver
 
 
 - name: Ensure OpenSSL certificate signing request is present
@@ -64,6 +66,7 @@
     chdir: '{{ openssl_certs_dir }}'
     creates: '{{ openssl_crt_selfsigned }}'
   when: cert_mode == "selfsigned"
+  notify: Restart Nginx webserver
 
 
 - name: Ensure OpenSSL signed private key is present
@@ -73,6 +76,7 @@
   args:
     creates: '{{ openssl_private_dir }}/{{ openssl_key_signed }}'
   when: cert_mode == "selfsigned"
+  notify: Restart Nginx webserver
 
 
 - name: Ensure OpenSSL signed certificate is present
@@ -82,6 +86,7 @@
   args:
     creates: '{{ openssl_certs_dir }}/{{ openssl_crt_signed }}'
   when: cert_mode == "selfsigned"
+  notify: Restart Nginx webserver
 
 
 - name: Ensure CA chain is present
@@ -91,6 +96,7 @@
   args:
     creates: '{{ openssl_certs_dir }}/{{ openssl_chain }}'
   when: cert_mode == "selfsigned"
+  notify: Restart Nginx webserver
 
 
 - name: Ensure CA chain with signed certificate is present
@@ -100,6 +106,7 @@
   args:
     creates: '{{ openssl_certs_dir }}/{{ openssl_crt_signed_and_chain }}'
   when: cert_mode == "selfsigned"
+  notify: Restart Nginx webserver
 
 
 - name: Create file with certificate and chain
@@ -110,6 +117,7 @@
     group: root
     mode: '0644'
   when: cert_mode == "static"
+  notify: Restart Nginx webserver
 
 
 - name: Upload contents of certificate file
@@ -120,6 +128,7 @@
     group: root
     mode: '0644'
   when: cert_mode == "static"
+  notify: Restart Nginx webserver
 
 
 - name: Upload contents of chain file
@@ -130,6 +139,7 @@
     group: root
     mode: '0644'
   when: cert_mode == "static"
+  notify: Restart Nginx webserver
 
 
 - name: Ensure Diffie-Hellman parameters are generated
