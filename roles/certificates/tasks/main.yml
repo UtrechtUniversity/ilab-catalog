@@ -162,17 +162,3 @@
     - '{{ openssl_certs_dir }}/{{ openssl_crt_signed_and_chain }}'
     - '{{ openssl_certs_dir }}/{{ openssl_chain }}'
   when: not ansible_check_mode and cert_mode != "ignore"
-
-
-- name: Ensure certificate files have correct permissions
-  ansible.builtin.file:
-    path: '{{ item }}'
-    mode: '0644'
-    group: 'root'
-    owner: 'root'
-    state: file
-  with_items:
-    - '{{ openssl_certs_dir }}/{{ openssl_crt_signed }}'
-    - '{{ openssl_certs_dir }}/{{ openssl_crt_signed_and_chain }}'
-    - '{{ openssl_certs_dir }}/{{ openssl_chain }}'
-  when: not ansible_check_mode and cert_mode != "ignore"
