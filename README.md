@@ -1,6 +1,8 @@
 # ilab-catalog
 [Ansible](https://docs.ansible.com) scripts for automatic deployment of Yoda Catalog.
 
+**This repository has been archived. The code is no longer maintained.**
+
 ## Requirements
 ### Control machine requirements
 * [Ansible](https://docs.ansible.com/ansible/intro_installation.html) (>= 2.8)
